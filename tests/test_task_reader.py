@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from lab_harness_runner.adapter import TaskSpec
 from lab_harness_runner.task_reader import _lab_path, read_task
 
 
@@ -116,6 +117,50 @@ def test_read_task_empty_criteria_returns_empty_deliverables(tmp_path: Path) -> 
     make_task_json(tmp_path, "area/empty", criteria=[])
     spec = read_task(tmp_path, "area/empty", "run-001")
     assert spec.expected_deliverables == []
+
+
+# ---------------------------------------------------------------------------
+# Tests using shared conftest fixtures (tmp_lab)
+# ---------------------------------------------------------------------------
+
+
+def test_read_task_returns_taskspec(tmp_lab: Path) -> None:
+    """read_task with tmp_lab fixture returns a TaskSpec with correct fields."""
+    spec = read_task(tmp_lab, "test-area/test-task", "run-1")
+    assert isinstance(spec, TaskSpec)
+    assert spec.task_id == "test-area/test-task"
+    assert spec.instructions == "Do the test."
+    assert spec.run_id == "run-1"
+
+
+def test_read_task_deliverables_from_criteria(tmp_lab: Path) -> None:
+    """Deliverables come from criteria[].deliverables, not top-level dict."""
+    spec = read_task(tmp_lab, "test-area/test-task", "run-1")
+    assert spec.expected_deliverables == ["output.docx"]
+
+
+def test_read_task_documents_dir(tmp_lab: Path) -> None:
+    """documents_dir points to the task's documents subdirectory."""
+    spec = read_task(tmp_lab, "test-area/test-task", "run-1")
+    assert spec.documents_dir == tmp_lab / "tasks" / "test-area" / "test-task" / "documents"
+
+
+def test_read_task_missing_file_raises(tmp_lab: Path) -> None:
+    """read_task with nonexistent task_id raises FileNotFoundError."""
+    with pytest.raises(FileNotFoundError):
+        read_task(tmp_lab, "test-area/nonexistent", "run-1")
+
+
+def test_read_task_path_traversal_raises(tmp_lab: Path) -> None:
+    """read_task with task_id containing '..' raises ValueError."""
+    with pytest.raises(ValueError):
+        read_task(tmp_lab, "../evil", "run-1")
+
+
+def test_read_task_absolute_path_raises(tmp_lab: Path) -> None:
+    """read_task with absolute task_id raises ValueError."""
+    with pytest.raises(ValueError):
+        read_task(tmp_lab, "/etc/passwd", "run-1")
 
 
 # ---------------------------------------------------------------------------

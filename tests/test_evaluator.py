@@ -169,6 +169,66 @@ def test_score_run_validates_in_output_dir_not_run_dir(tmp_path):
     assert "report.docx" in str(exc_info.value)
 
 
+def test_score_run_raises_before_subprocess_when_missing(tmp_path):
+    """score_run raises FileNotFoundError BEFORE subprocess when deliverable missing."""
+    from lab_harness_runner.evaluator import score_run
+
+    output_dir = tmp_path / "results" / "my-run" / "output"
+    output_dir.mkdir(parents=True)
+    # Do NOT create "output.docx"
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        with pytest.raises(FileNotFoundError):
+            score_run(tmp_path, "my-run", "test-area/test-task", ["output.docx"])
+        # subprocess must NOT have been called
+        mock_run.assert_not_called()
+
+
+def test_score_run_calls_subprocess_when_files_present(tmp_path):
+    """score_run calls subprocess when all deliverables are present."""
+    from lab_harness_runner.evaluator import score_run
+
+    output_dir = tmp_path / "results" / "my-run" / "output"
+    output_dir.mkdir(parents=True)
+    (output_dir / "output.docx").write_bytes(b"")
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        score_run(tmp_path, "my-run", "test-area/test-task", ["output.docx"])
+    mock_run.assert_called_once()
+    cmd = mock_run.call_args[0][0]
+    assert "--run-id" in cmd
+    assert "my-run" in cmd
+
+
+def test_score_run_uses_cwd_lab_path_fixture(tmp_path):
+    """score_run passes cwd=lab_path to subprocess."""
+    from lab_harness_runner.evaluator import score_run
+
+    output_dir = tmp_path / "results" / "my-run" / "output"
+    output_dir.mkdir(parents=True)
+    (output_dir / "output.docx").write_bytes(b"")
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        score_run(tmp_path, "my-run", "test-area/test-task", ["output.docx"])
+    assert mock_run.call_args[1]["cwd"] == tmp_path
+
+
+def test_score_run_returns_scores_path_fixture(tmp_path):
+    """score_run returns lab_path / 'results' / run_id / 'scores.json'."""
+    from lab_harness_runner.evaluator import score_run
+
+    output_dir = tmp_path / "results" / "my-run" / "output"
+    output_dir.mkdir(parents=True)
+    (output_dir / "output.docx").write_bytes(b"")
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = score_run(tmp_path, "my-run", "test-area/test-task", ["output.docx"])
+    assert result == tmp_path / "results" / "my-run" / "scores.json"
+
+
 def test_score_run_custom_judge_model(tmp_path):
     """score_run passes judge_model to the subprocess command."""
     from lab_harness_runner.evaluator import score_run

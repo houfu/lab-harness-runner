@@ -131,6 +131,35 @@ def test_write_metrics_contains_end_state(tmp_path):
     assert data["end_state"] == "timeout"
 
 
+def test_write_metrics_safe_defaults(tmp_path):
+    """write_metrics with input_tokens=None writes input_tokens: 0 (not null)."""
+    from lab_harness_runner.metrics import write_metrics
+
+    result = RunResult(
+        run_id="test-run-safe",
+        end_state="clean",
+        wall_clock_seconds=1.0,
+        input_tokens=None,
+        output_tokens=None,
+    )
+    path = write_metrics(tmp_path, result)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["input_tokens"] == 0
+    assert data["output_tokens"] == 0
+
+
+def test_write_metrics_with_sample_run_result(tmp_path, sample_run_result):
+    """write_metrics with sample_run_result fixture preserves all values."""
+    from lab_harness_runner.metrics import write_metrics
+
+    path = write_metrics(tmp_path, sample_run_result)
+    assert path == tmp_path / "metrics.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["input_tokens"] == 100
+    assert data["output_tokens"] == 50
+    assert data["end_state"] == "clean"
+
+
 def test_write_metrics_no_task_title(tmp_path):
     """Written JSON does NOT contain task_title key."""
     from lab_harness_runner.metrics import write_metrics

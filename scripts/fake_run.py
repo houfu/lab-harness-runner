@@ -9,7 +9,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import os
 import time
 import uuid
 from html import escape
@@ -25,15 +24,7 @@ from lab_harness_runner import (
     score_run,
     write_metrics,
 )
-
-
-def reject_unsafe_relative_path(value: str, name: str) -> Path:
-    path = Path(value)
-    if path.is_absolute():
-        raise ValueError(f"{name} must be relative: {value}")
-    if any(part in {"", ".", ".."} for part in path.parts):
-        raise ValueError(f"{name} contains an unsafe path segment: {value}")
-    return path
+from lab_harness_runner.task_reader import _lab_path, _reject_unsafe_relative_path
 
 
 def write_minimal_docx(path: Path, lines: list[str]) -> None:
@@ -68,22 +59,6 @@ def write_minimal_docx(path: Path, lines: list[str]) -> None:
             "</Relationships>",
         )
         docx.writestr("word/document.xml", document_xml)
-
-
-def _lab_path(override: Path | None = None) -> Path:
-    """Return the Harvey LAB root directory.
-
-    Resolution order:
-    1. override if provided
-    2. HARVEY_LAB_PATH env var
-    3. Path.home() / "Projects" / "harvey-labs"
-    """
-    if override is not None:
-        return override
-    env = os.environ.get("HARVEY_LAB_PATH")
-    if env:
-        return Path(env)
-    return Path.home() / "Projects" / "harvey-labs"
 
 
 class FakeAdapter:
@@ -127,9 +102,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    reject_unsafe_relative_path(args.task, "--task")
+    _reject_unsafe_relative_path(args.task, "--task")
     if args.run_id is not None:
-        reject_unsafe_relative_path(args.run_id, "--run-id")
+        _reject_unsafe_relative_path(args.run_id, "--run-id")
 
     run_id = args.run_id or str(uuid.uuid4())
     lab_path = (

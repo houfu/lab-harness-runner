@@ -38,6 +38,15 @@ Deliverables:
 Exit Criteria:
 - A fake adapter can produce a LAB-compatible run directory and invoke scoring.
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Package scaffold: pyproject.toml build-system config, adapter.py (TaskSpec, RunResult, Adapter Protocol), __init__.py public exports
+- [ ] 02-02-PLAN.md — File I/O modules: task_reader.py (read_task) and result_builder.py (build_result_dir)
+- [ ] 02-03-PLAN.md — Pipeline modules: metrics.py (write_metrics) and evaluator.py (score_run with pre-validation)
+- [ ] 02-04-PLAN.md — Unit test suite: conftest.py fixtures, test_task_reader, test_result_builder, test_metrics, test_evaluator
+- [ ] 02-05-PLAN.md — Exit criterion: scripts/fake_run.py end-to-end wiring proof
+
 ## Phase 3: Implement Nanoclaw-LQ Adapter
 
 Status: planned

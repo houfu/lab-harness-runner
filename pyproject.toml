@@ -1,0 +1,9 @@
+[project]
+name = "lab-harness-runner"
+version = "0.1.0"
+description = "Harness-neutral runner experiments for Harvey LAB."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.black]
+line-length = 88

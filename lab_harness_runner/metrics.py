@@ -13,9 +13,7 @@ def write_metrics(run_dir: Path, result: RunResult) -> Path:
     None fields use safe defaults: int fields -> 0, list fields -> [].
     """
     metrics = {
-        "input_tokens": (
-            result.input_tokens if result.input_tokens is not None else 0
-        ),
+        "input_tokens": (result.input_tokens if result.input_tokens is not None else 0),
         "output_tokens": (
             result.output_tokens if result.output_tokens is not None else 0
         ),
@@ -30,9 +28,7 @@ def write_metrics(run_dir: Path, result: RunResult) -> Path:
             result.documents_skipped if result.documents_skipped is not None else 0
         ),
         "documents_read_list": (
-            result.documents_read_list
-            if result.documents_read_list is not None
-            else []
+            result.documents_read_list if result.documents_read_list is not None else []
         ),
         "documents_skipped_list": (
             result.documents_skipped_list

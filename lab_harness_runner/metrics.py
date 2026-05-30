@@ -13,14 +13,32 @@ def write_metrics(run_dir: Path, result: RunResult) -> Path:
     None fields use safe defaults: int fields -> 0, list fields -> [].
     """
     metrics = {
-        "input_tokens": result.input_tokens or 0,
-        "output_tokens": result.output_tokens or 0,
+        "input_tokens": (
+            result.input_tokens if result.input_tokens is not None else 0
+        ),
+        "output_tokens": (
+            result.output_tokens if result.output_tokens is not None else 0
+        ),
         "wall_clock_seconds": result.wall_clock_seconds,
-        "documents_read": result.documents_read or 0,
-        "total_vdr_files": result.total_vdr_files or 0,
-        "documents_skipped": result.documents_skipped or 0,
-        "documents_read_list": result.documents_read_list or [],
-        "documents_skipped_list": result.documents_skipped_list or [],
+        "documents_read": (
+            result.documents_read if result.documents_read is not None else 0
+        ),
+        "total_vdr_files": (
+            result.total_vdr_files if result.total_vdr_files is not None else 0
+        ),
+        "documents_skipped": (
+            result.documents_skipped if result.documents_skipped is not None else 0
+        ),
+        "documents_read_list": (
+            result.documents_read_list
+            if result.documents_read_list is not None
+            else []
+        ),
+        "documents_skipped_list": (
+            result.documents_skipped_list
+            if result.documents_skipped_list is not None
+            else []
+        ),
         "end_state": result.end_state,
     }
     path = run_dir / "metrics.json"

@@ -44,7 +44,7 @@ Exit Criteria:
 
 - A fake adapter can produce a LAB-compatible run directory and invoke scoring.
 
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -58,7 +58,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-04-PLAN.md — Unit test suite: conftest.py fixtures, test_task_reader, test_result_builder, test_metrics, test_evaluator
+- [x] 02-04-PLAN.md — Unit test suite: conftest.py fixtures, test_task_reader, test_result_builder, test_metrics, test_evaluator
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

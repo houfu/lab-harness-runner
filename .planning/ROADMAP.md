@@ -44,7 +44,7 @@ Exit Criteria:
 
 - A fake adapter can produce a LAB-compatible run directory and invoke scoring.
 
-**Plans:** 1/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 **Wave 1**
@@ -53,8 +53,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — File I/O modules: task_reader.py (read_task) and result_builder.py (build_result_dir)
-- [ ] 02-03-PLAN.md — Pipeline modules: metrics.py (write_metrics) and evaluator.py (score_run with pre-validation)
+- [x] 02-02-PLAN.md — File I/O modules: task_reader.py (read_task) and result_builder.py (build_result_dir)
+- [x] 02-03-PLAN.md — Pipeline modules: metrics.py (write_metrics) and evaluator.py (score_run with pre-validation)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 

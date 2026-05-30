@@ -44,12 +44,12 @@ Exit Criteria:
 
 - A fake adapter can produce a LAB-compatible run directory and invoke scoring.
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Package scaffold: pyproject.toml build-system config, adapter.py (TaskSpec, RunResult, Adapter Protocol), __init__.py public exports
+- [x] 02-01-PLAN.md — Package scaffold: pyproject.toml build-system config, adapter.py (TaskSpec, RunResult, Adapter Protocol), __init__.py public exports
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

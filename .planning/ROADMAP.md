@@ -2,7 +2,7 @@
 
 ## Phase 1: Verify External Contracts And Scoring Pipeline
 
-Status: planned
+Status: complete (2026-05-30)
 
 Goal: Confirm the live LAB and nanoclaw-lq surfaces, then prove LAB scoring with
 a manually created result output.

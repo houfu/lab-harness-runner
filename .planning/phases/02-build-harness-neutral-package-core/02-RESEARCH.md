@@ -888,9 +888,9 @@ run_id to package functions.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does fake_run.py need a minimal valid DOCX for `.docx` deliverables?**
+1. **Does fake_run.py need a minimal valid DOCX for `.docx` deliverables?** RESOLVED: Yes — `write_minimal_docx` from `lab_probe.py` is copied into `fake_run.py` as a local helper. Default mode is no-score; `--score` requires proper DOCX.
    - What we know: The pre-score validation only checks file existence. The LAB
      evaluator reads file content when `--score` is invoked. For the D-12 exit
      criterion (without `--score`), plain text files suffice.
@@ -902,7 +902,7 @@ run_id to package functions.
      from `lab_probe.py` into `fake_run.py` as a local helper.
 
 2. **Should `score_run` in `evaluator.py` re-read task.json to get expected deliverables,
-   or accept them as a parameter?**
+   or accept them as a parameter?** RESOLVED: Accept `expected_deliverables: list[str]` as a parameter — caller already has TaskSpec at call time, avoiding a redundant task.json read.
    - What we know: The pre-validation needs the expected deliverables list. Two sources:
      (a) re-read task.json, (b) accept `TaskSpec` or `expected_deliverables` as parameter.
    - What's unclear: Passing `TaskSpec` makes the API tighter; re-reading is independent.

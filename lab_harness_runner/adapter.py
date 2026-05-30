@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
+
+_VALID_END_STATES = {"clean", "agent_error", "timeout"}
 
 
 @dataclass
@@ -24,7 +26,7 @@ class RunResult:
     """
 
     run_id: str
-    end_state: str
+    end_state: Literal["clean", "agent_error", "timeout"]
     wall_clock_seconds: float
     # Optional metrics — None when adapter cannot provide them
     input_tokens: int | None = None
@@ -34,6 +36,13 @@ class RunResult:
     documents_skipped: int | None = None
     documents_read_list: list[str] = field(default_factory=list)
     documents_skipped_list: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.end_state not in _VALID_END_STATES:
+            raise ValueError(
+                f"end_state must be one of {sorted(_VALID_END_STATES)}, "
+                f"got: {self.end_state!r}"
+            )
 
 
 class Adapter(Protocol):

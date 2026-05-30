@@ -3,17 +3,27 @@ from __future__ import annotations
 from lab_harness_runner.adapter import Adapter, RunResult, TaskSpec
 
 # Wave 2 modules — imported here for public API convenience.
-# These modules will be created in subsequent plans; until then,
-# importing lab_harness_runner directly will raise ImportError for
-# any of the four names below. Importing from lab_harness_runner.adapter
-# always works.
+# Each import is guarded independently so that already-created modules
+# are available even when sibling modules are not yet created.
 try:
     from lab_harness_runner.task_reader import read_task
+except ImportError:
+    pass  # task_reader not yet created
+
+try:
     from lab_harness_runner.result_builder import build_result_dir
+except ImportError:
+    pass  # result_builder not yet created
+
+try:
     from lab_harness_runner.metrics import write_metrics
+except ImportError:
+    pass  # metrics not yet created
+
+try:
     from lab_harness_runner.evaluator import score_run
 except ImportError:
-    pass  # Wave 2 modules not yet created
+    pass  # evaluator not yet created
 
 __all__ = [
     "Adapter",

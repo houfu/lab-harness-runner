@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+from html import escape
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 
 def reject_unsafe_relative_path(value: str, name: str) -> Path:
@@ -34,20 +36,53 @@ def expected_deliverables(task_config: dict) -> list[str]:
     return sorted(names)
 
 
+def write_minimal_docx(path: Path, lines: list[str]) -> None:
+    paragraphs = "".join(
+        f"<w:p><w:r><w:t>{escape(line)}</w:t></w:r></w:p>" for line in lines
+    )
+    document_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        f"<w:body>{paragraphs}<w:sectPr/></w:body>"
+        "</w:document>"
+    )
+
+    with ZipFile(path, "w", ZIP_DEFLATED) as docx:
+        docx.writestr(
+            "[Content_Types].xml",
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            '<Default Extension="xml" ContentType="application/xml"/>'
+            '<Override PartName="/word/document.xml" '
+            'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            "</Types>",
+        )
+        docx.writestr(
+            "_rels/.rels",
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
+            'Target="word/document.xml"/>'
+            "</Relationships>",
+        )
+        docx.writestr("word/document.xml", document_xml)
+
+
 def write_dummy_deliverable(path: Path, task_title: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "\n".join(
-            [
-                "Dummy deliverable for LAB result-layout validation.",
-                "",
-                f"Task: {task_title}",
-                "",
-                "This file proves the expected filename and output directory shape.",
-            ]
-        ),
-        encoding="utf-8",
-    )
+    lines = [
+        "Dummy deliverable for LAB result-layout validation.",
+        "",
+        f"Task: {task_title}",
+        "",
+        "This file proves the expected filename and output directory shape.",
+    ]
+    if path.suffix.lower() == ".docx":
+        write_minimal_docx(path, lines)
+        return
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def write_metrics(path: Path, task_config: dict, harvey_root: Path, task: Path) -> None:

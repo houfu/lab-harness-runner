@@ -31,6 +31,7 @@ key-decisions:
   - "Exact expected deliverable filenames are generated from criteria[].deliverables."
 patterns-established:
   - "Probe scripts reject absolute paths, '.', '..', and empty path segments before writing."
+  - "DOCX dummy deliverables are real Office Open XML packages, not plain text with a .docx suffix."
   - "Manual scorer commands are documented separately from automated dry-run validation."
 requirements-completed: []
 duration: 12min
@@ -56,7 +57,9 @@ completed: 2026-05-30
 - Captured verified nanoclaw-lq DB ownership, mount, and briefing contracts in
   the same contract note.
 - Added `scripts/lab_probe.py`, a deterministic dry-run probe that creates a
-  LAB-compatible result skeleton and dummy expected deliverable.
+  LAB-compatible result skeleton and dummy expected deliverable. `.docx`
+  deliverables are written as minimal valid DOCX packages so LAB's scorer can
+  feed them to `pandoc`.
 - Documented the optional live judge-backed scorer command in
   `docs/phase-1-manual-check.md`.
 
@@ -67,12 +70,13 @@ Each task was committed atomically:
 1. **Document verified external contracts** - `45d4389` (docs)
 2. **Create deterministic LAB result-layout probe** - `19dfd47` (feat)
 3. **Document optional manual scorer proof** - `b36f5d3` (docs)
+4. **Harden DOCX probe output for scorer parsing** - current fix commit
 
 ## Files Created/Modified
 
 - `docs/verified-contracts.md` - verified external contracts and implementation consequences.
 - `docs/phase-1-manual-check.md` - optional scorer command and expected artifacts.
-- `scripts/lab_probe.py` - dry-run LAB result skeleton generator.
+- `scripts/lab_probe.py` - dry-run LAB result skeleton generator with minimal DOCX output support.
 - `pyproject.toml` - minimal Python project metadata for `uv run`.
 - `uv.lock` - `uv` lockfile for the local package.
 - `.gitignore` - ignores local virtualenv, caches, `.DS_Store`, and local results.
@@ -93,7 +97,11 @@ committed with the Python probe scaffold.
 
 ## Issues Encountered
 
-None. The probe wrote the dry-run output successfully:
+The initial probe wrote plain text for every deliverable extension. A review of
+LAB's scorer showed `.docx` files are extracted through `pandoc`, so the probe
+was hardened to write a minimal valid DOCX package for `.docx` deliverables.
+
+The probe wrote the dry-run output successfully:
 
 - `/Users/houfu/Projects/harvey-labs/results/manual-probe/output/term-sheet-issues-memo.docx`
 - `/Users/houfu/Projects/harvey-labs/results/manual-probe/metrics.json`
@@ -110,6 +118,8 @@ credentials configured.
 - `uv run python scripts/lab_probe.py --harvey-root /Users/houfu/Projects/harvey-labs --task banking-finance/identify-term-sheet-issues --run-id manual-probe --dry-run` passed.
 - Expected dummy deliverable exists.
 - Expected `metrics.json` exists.
+- `file /Users/houfu/Projects/harvey-labs/results/manual-probe-docx-check/output/term-sheet-issues-memo.docx` identifies the hardened output as `Microsoft Word 2007+`.
+- Local `pandoc` extraction was not run because `pandoc` is not installed on this machine's PATH.
 
 ## Next Phase Readiness
 

@@ -17,5 +17,9 @@ Expected artifacts:
 - `/Users/houfu/Projects/harvey-labs/results/manual-probe/report.html`
 
 Expected caveat: the dummy deliverable is not meant to pass the legal rubric.
-This check proves the directory shape, evaluator command, score writing, and
-report generation path.
+For `.docx` deliverables, `scripts/lab_probe.py` writes a minimal valid DOCX
+package so LAB's `pandoc` extraction path can read it when `pandoc` is installed
+in the LAB runtime.
+
+This check proves the directory shape, evaluator command, document extraction,
+score writing, and report generation path.

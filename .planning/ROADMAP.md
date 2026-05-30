@@ -44,7 +44,7 @@ Exit Criteria:
 
 - A fake adapter can produce a LAB-compatible run directory and invoke scoring.
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -62,7 +62,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-05-PLAN.md — Exit criterion: scripts/fake_run.py end-to-end wiring proof
+- [x] 02-05-PLAN.md — Exit criterion: scripts/fake_run.py end-to-end wiring proof
 
 ## Phase 3: Implement Nanoclaw-LQ Adapter
 

@@ -23,22 +23,27 @@ adapters, multi-task/multi-seed orchestration) belong to later phases.
 <decisions>
 ## Implementation Decisions
 
-### Dispatch Mechanism (discussed this session)
-- **D-01:** Primary dispatch path is to **shell out to a nanoclaw CLI** that uses
-  nanoclaw's own session-manager API to enqueue the inbound task message. The
-  adapter does not write `inbound.db` directly on the happy path. This keeps the
-  adapter on nanoclaw's supported API surface rather than coupling to the SQLite
-  schema (`schema.ts`).
-- **D-02:** **Research must verify** that nanoclaw exposes a suitable CLI/command
-  for enqueuing an inbound `messages_in` message. `verified-contracts.md`
-  documented the session-DB split and the one-writer invariant but did NOT
-  confirm such a CLI exists.
-- **D-03:** **Fallback policy — block and report.** If research finds no suitable
-  CLI, STOP and surface the finding to the user. Do NOT auto-select direct SQLite
-  writes or a Node shim. The user will decide the dispatch path once the real
-  nanoclaw surface is known. (Direct SQLite write and a thin Node `send-message`
-  shim were both considered as fallbacks and explicitly deferred to that
-  decision point.)
+### Dispatch Mechanism (discussed this session; D-03 resolved post-research 2026-05-31)
+- **D-01 (superseded by D-03 resolution):** The original intent was to **shell out
+  to a nanoclaw CLI** that uses nanoclaw's session-manager API to enqueue the
+  inbound task message, avoiding coupling to the SQLite schema. Phase 3 research
+  found NO such CLI exists (see RESEARCH.md "DISPATCH CLI VERDICT"), so this path
+  is not implementable as stated.
+- **D-02:** Research verified the nanoclaw surface: `ncl sessions` exposes only
+  `list`/`get` (no `create`); there is no `messages send`/`sessions enqueue`.
+  Sessions are created daemon-side by `router.ts → resolveSession()` when a
+  message arrives on a channel. CLI dispatch is therefore impossible.
+- **D-03 (RESOLVED — Option A, Thin Node shim):** The dispatch path is a small
+  **Node shim added to the nanoclaw-lq repo** (e.g. `scripts/send-lab-message.ts`)
+  that imports nanoclaw's own `session-manager` and calls `resolveSession()` +
+  `writeSessionMessage()` + `wakeContainer()`. The Python adapter shells out to it
+  via `subprocess` (run through nanoclaw's `pnpm exec tsx`). This uses nanoclaw's
+  real API, creates the session correctly (Option B cannot — session creation is
+  daemon-side), honors the one-writer invariant, and keeps Python on stdlib only.
+  Accepted cost: one new glue script lives in the nanoclaw-lq repo. (Option B —
+  direct Python SQLite write — and Option C — reuse a group via `cli.sock` — were
+  rejected: B cannot bootstrap a session and is schema-fragile; C has no per-task
+  session isolation and the existing group uses Ollama, not Anthropic Claude.)
 - **D-04:** **Inbound message content = instructions + explicit output contract.**
   The dispatched message carries `TaskSpec.instructions` PLUS an explicit footer
   that states (a) the exact output path the agent must write to

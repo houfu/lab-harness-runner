@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-31T00:32:39Z"
+last_updated: "2026-05-31T00:41:13.093Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
-  percent: 56
+  completed_plans: 8
+  percent: 50
 ---
 
 # State
@@ -26,16 +26,19 @@ Executing Phase 3: Implement Nanoclaw-LQ Adapter.
 
 ## Current Phase
 
-Phase 3: Implement Nanoclaw-LQ Adapter — Plan 01 complete.
+Phase 3: Implement Nanoclaw-LQ Adapter — Plan 02 complete.
 
 ## Next Action
 
-Execute Phase 3 Plan 02: Nanoclaw dispatch and mount wiring (daemon/Docker).
+Execute Phase 3 Plan 03: Integration smoke test and human checkpoint (daemon + Docker required).
 
 ## Decisions
 
 - NanoclawAdapter.run() stubbed with NotImplementedError — dispatch wired in Plan 02 (03-01)
 - outbound_db fixture appended to conftest.py for shared use across tests (03-01)
+- Mount configuration uses two hardcoded relative containerPaths (lab-documents, lab-output) — no caller-controlled paths (03-02)
+- Central DB path is nanoclaw_dir/data/v2.db confirmed from nanoclaw-lq/src/index.ts (03-02)
+- Shim JSON stdout carries both sessionId and outboundDbPath so adapter needs no path reconstruction (03-02)
 
 ## Notes
 
@@ -50,6 +53,11 @@ Execute Phase 3 Plan 02: Nanoclaw dispatch and mount wiring (daemon/Docker).
   end-state mapping, D-04/D-05 footer) implemented and unit-tested against synthetic
   outbound.db. 52 tests pass. Duration: 157 seconds.
 
+- Phase 3 Plan 02 completed on 2026-05-31: Node shim (send-lab-message.ts) in nanoclaw-lq
+  repo, NanoclawAdapter.run() wired (mounts + dispatch + poll + result), nanoclaw_run.py CLI,
+  subprocess-mock dispatch test. 53 tests pass. Duration: ~480 seconds.
+
 ## Session Log
 
 - 2026-05-31T00:32:39Z: Completed 03-01-PLAN.md (NanoclawAdapter core logic and tests)
+- 2026-05-31T00:40:15Z: Completed 03-02-PLAN.md (dispatch shim, mount wiring, CLI, dispatch test)

@@ -84,7 +84,7 @@ Exit Criteria:
 - One LAB task reaches nanoclaw and produces at least one expected deliverable in
   `results/<run-id>/output/`.
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**
@@ -93,7 +93,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1; needs nanoclaw daemon + Docker for integration verify)*
 
-- [ ] 03-02-PLAN.md — Dispatch wiring: Node shim send-lab-message.ts in nanoclaw-lq repo (Option A), run() mount config + subprocess dispatch + poll, scripts/nanoclaw_run.py, mocked dispatch test (not autonomous)
+- [x] 03-02-PLAN.md — Dispatch wiring: Node shim send-lab-message.ts in nanoclaw-lq repo (Option A), run() mount config + subprocess dispatch + poll, scripts/nanoclaw_run.py, mocked dispatch test (not autonomous)
 
 **Wave 3** *(blocked on Wave 2; human setup + e2e proof)*
 

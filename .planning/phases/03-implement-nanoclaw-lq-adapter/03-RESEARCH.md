@@ -759,35 +759,34 @@ this is not a path escalation vector. The adapter should NOT write arbitrary pat
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **DISPATCH PATH — USER DECISION REQUIRED (D-03)**
+1. **DISPATCH PATH — USER DECISION REQUIRED (D-03)** — **RESOLVED: Option A (thin Node shim).**
+   User selected Option A during /gsd:plan-phase post-research (recorded in 03-CONTEXT.md D-03,
+   2026-05-31). Adding `scripts/send-lab-message.ts` to the nanoclaw-lq repo is accepted; it
+   imports nanoclaw's `session-manager` and is called by the Python adapter via subprocess.
+   No human-verify checkpoint is needed to re-decide dispatch — the choice is locked.
    - What we know: No `ncl` CLI command enqueues an inbound message. Three options: (A) thin
      Node shim in nanoclaw-lq repo, (B) direct Python SQLite write to inbound.db, (C) use
      existing cli.sock chat channel.
-   - What's unclear: User preference; whether adding a script to nanoclaw-lq is acceptable
-     (vs the "unmodified dependency" constraint); whether Option C's session isolation is
-     acceptable.
-   - Recommendation: Option A (thin Node shim) preserves nanoclaw's API surface and is the
-     cleanest. Option B is viable if the user prefers no Node dependency. Option C is the
-     simplest but lacks session isolation.
-   - **Planner must insert a `checkpoint:human-verify` before any dispatch implementation task.**
+   - Resolution: Option A. (B rejected — cannot bootstrap a session, schema-fragile; C rejected
+     — no per-task session isolation, existing group uses Ollama.)
 
-2. **Which group to use for LAB runs**
+2. **Which group to use for LAB runs** — **RESOLVED: dedicated LAB group via human Wave-0 setup.**
+   Plan 03 Task 1 (`checkpoint:human-action`) requires creating/configuring a dedicated
+   Anthropic-Claude LAB group before the proof run, avoiding pollution of existing group history.
    - What we know: `_ping-test` group uses Ollama (not Anthropic). There is also a `main`
      group folder in `groups/main/` but no corresponding agent group DB row was listed in
      `ncl groups list`. The daemon shows only the `_ping-test` / "Terminal Agent" group.
-   - What's unclear: Whether a dedicated LAB group should be created (one-time human setup)
-     or an existing group reused.
-   - Recommendation: Create a dedicated `lab-runner` group as a Wave 0 human task. This
-     avoids polluting an existing group's session history with LAB task runs.
+   - Resolution: Create a dedicated LAB group as a one-time human setup task (Plan 03 Task 1).
 
-3. **Session isolation per LAB run**
+3. **Session isolation per LAB run** — **RESOLVED: `sessionMode: 'agent-shared'` for Phase 3.**
+   Plan 02 Task 1's shim uses `'agent-shared'`; context-accumulation concerns are deferred to
+   Phase 4 per the recommendation below.
    - What we know: Sessions are keyed by (agentGroupId, messagingGroupId, threadId). If the
      adapter reuses the same group without a new messaging group per run, all runs share one
      session and its `inbound.db` accumulates all prior messages.
-   - What's unclear: Whether accumulated context is desirable or harmful for LAB scoring.
-   - Recommendation: Use `sessionMode: 'agent-shared'` (one session per agent group) for
+   - Resolution: Use `sessionMode: 'agent-shared'` (one session per agent group) for
      simplicity in Phase 3; revisit in Phase 4 if context accumulation causes issues.
 
 ---

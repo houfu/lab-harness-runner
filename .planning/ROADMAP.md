@@ -84,12 +84,12 @@ Exit Criteria:
 - One LAB task reaches nanoclaw and produces at least one expected deliverable in
   `results/<run-id>/output/`.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Adapter core: NanoclawAdapter class, outbound.db STATUS: poll loop, wall-clock timeout, end-state mapping, D-04/D-05 message footer, plus Wave 0 unit tests + synthetic outbound.db fixture (autonomous)
+- [x] 03-01-PLAN.md — Adapter core: NanoclawAdapter class, outbound.db STATUS: poll loop, wall-clock timeout, end-state mapping, D-04/D-05 message footer, plus Wave 0 unit tests + synthetic outbound.db fixture (autonomous)
 
 **Wave 2** *(blocked on Wave 1; needs nanoclaw daemon + Docker for integration verify)*
 

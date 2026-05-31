@@ -39,16 +39,16 @@ created: 2026-05-31
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | 01 | 1 | REQ-STATUS (STATUS: DONE in outbound.db → end_state="clean") | — | Only the task's own session outbound.db is read | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_poll_status_done -x` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | REQ-TIMEOUT (poll timeout → end_state="timeout") | — | Timeout recorded distinctly from agent_error | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_poll_timeout -x` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | REQ-ENDSTATE (agent error → end_state="agent_error") | — | Non-clean terminal mapped correctly | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_poll_agent_error -x` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | REQ-DELIVERABLE (missing deliverable → FileNotFoundError before score) | V5 | Validate filenames before invoking evaluator | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_missing_deliverable_raises -x` | ❌ W0 | ⬜ pending |
-| TBD | 02 | 2 | REQ-DISPATCH (adapter creates session + enqueues message via Node shim) | V5 | group_id/session_id rejected if unsafe relative path | integration | Manual — requires running nanoclaw daemon | ❌ W0 | ⬜ pending |
-| TBD | 02 | 2 | REQ-MOUNTS (documents appear at /workspace/extra/lab-documents RO; output RW) | path-traversal | Only known docs dir + run output dir added to additional_mounts | integration | Manual — requires Docker + daemon | ❌ W0 | ⬜ pending |
-| TBD | 02 | 2 | REQ-EXIT (one real task produces deliverable in output/) | — | — | e2e/smoke | `uv run python scripts/nanoclaw_run.py --task corporate-ma/compare-matter-plan-against-engagement-letter` | ❌ W0 | ⬜ pending |
+| 03-01-T3 | 01 | 1 | REQ-STATUS (STATUS: DONE in outbound.db → end_state="clean") | T-03-02 | Open/read/close-per-poll; only the task's own session outbound.db is read | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_poll_status_done_returns_clean -x` | ❌ W0 | ⬜ pending |
+| 03-01-T3 | 01 | 1 | REQ-TIMEOUT (poll timeout → end_state="timeout") | — | Timeout recorded distinctly from agent_error | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_poll_timeout_returns_timeout -x` | ❌ W0 | ⬜ pending |
+| 03-01-T3 | 01 | 1 | REQ-ENDSTATE (agent error → end_state="agent_error") | — | Non-clean terminal mapped correctly | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_poll_status_error_returns_agent_error -x` | ❌ W0 | ⬜ pending |
+| 03-01-T2/T3 | 01 | 1 | REQ-DELIVERABLE (footer states exact filenames; score_run gates missing deliverable before evaluator — enforced in Phase 2 evaluator.py) | T-03-01 | Footer lists exact expected_deliverables; score_run raises FileNotFoundError before subprocess (existing) | unit | `uv run pytest tests/test_nanoclaw_adapter.py::test_build_message_content_includes_contract -x` (footer) + `uv run pytest tests/test_evaluator.py -x` (pre-score gate) | ❌ W0 | ⬜ pending |
+| 03-02-T1/T2 | 02 | 2 | REQ-DISPATCH (adapter creates session + enqueues message via Node shim) | T-03-05 | group_id rejected if unsafe relative path; list-form subprocess, no shell=True | integration | Manual — requires running nanoclaw daemon (Plan 02 Task 1 human-check) | ❌ W0 | ⬜ pending |
+| 03-02-T2 | 02 | 2 | REQ-MOUNTS (documents appear at /workspace/extra/lab-documents RO; output RW) | T-03-04, T-03-06 | Only known docs dir + run output dir added to additional_mounts; relative containerPath | integration | Manual — requires Docker + daemon (verified at Plan 03 checkpoint) | ❌ W0 | ⬜ pending |
+| 03-03-T2 | 03 | 3 | REQ-EXIT (one real task produces deliverable in output/) | T-03-08 | Allowlist scoped to LAB root only | e2e/smoke | `uv run python scripts/nanoclaw_run.py --task corporate-ma/compare-matter-plan-against-engagement-letter --nanoclaw-dir /Users/houfu/Projects/nanoclaw-lq --group-id <LAB group>` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
-*Task IDs are placeholders until the planner assigns them; the planner MUST reconcile this map to its actual task IDs.*
+*Task IDs reconciled to plan tasks: 03-01-T2 (adapter logic + footer), 03-01-T3 (unit tests), 03-02-T1 (Node shim), 03-02-T2 (run() mounts+dispatch), 03-03-T2 (e2e proof run).*
 
 ---
 

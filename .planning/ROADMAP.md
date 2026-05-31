@@ -84,6 +84,21 @@ Exit Criteria:
 - One LAB task reaches nanoclaw and produces at least one expected deliverable in
   `results/<run-id>/output/`.
 
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Adapter core: NanoclawAdapter class, outbound.db STATUS: poll loop, wall-clock timeout, end-state mapping, D-04/D-05 message footer, plus Wave 0 unit tests + synthetic outbound.db fixture (autonomous)
+
+**Wave 2** *(blocked on Wave 1; needs nanoclaw daemon + Docker for integration verify)*
+
+- [ ] 03-02-PLAN.md — Dispatch wiring: Node shim send-lab-message.ts in nanoclaw-lq repo (Option A), run() mount config + subprocess dispatch + poll, scripts/nanoclaw_run.py, mocked dispatch test (not autonomous)
+
+**Wave 3** *(blocked on Wave 2; human setup + e2e proof)*
+
+- [ ] 03-03-PLAN.md — Exit criterion: human mount-allowlist + Anthropic-Claude LAB group setup, end-to-end proof run of corporate-ma/compare-matter-plan-against-engagement-letter producing discrepancy-analysis-memo.docx (not autonomous)
+
 ## Phase 4: Completion, Metrics, Evaluation, And Scale-Out
 
 Status: planned

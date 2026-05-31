@@ -66,3 +66,24 @@ def sample_run_result() -> RunResult:
         input_tokens=100,
         output_tokens=50,
     )
+
+
+@pytest.fixture()
+def outbound_db(tmp_path: Path) -> Path:
+    """Create a synthetic outbound.db with messages_out table.
+
+    Returns the path to the DB file. The session directory structure mirrors
+    nanoclaw's data/v2-sessions/<agentGroupId>/<sessionId>/outbound.db layout.
+    """
+    import sqlite3
+
+    session_dir = tmp_path / "v2-sessions" / "ag-test" / "sess-test"
+    session_dir.mkdir(parents=True)
+    db_path = session_dir / "outbound.db"
+    conn = sqlite3.connect(str(db_path))
+    conn.execute(
+        "CREATE TABLE messages_out (seq INTEGER PRIMARY KEY AUTOINCREMENT, content TEXT NOT NULL)"
+    )
+    conn.commit()
+    conn.close()
+    return db_path

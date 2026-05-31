@@ -17,8 +17,8 @@ created: 2026-05-31
 
 | Property | Value |
 |----------|-------|
-| **Framework** | pytest (NOT yet installed — no pytest.ini or test files found; Wave 0 installs) |
-| **Config file** | none — Wave 0 installs (`uv add --dev pytest`) |
+| **Framework** | pytest 9.0.3 — ALREADY INSTALLED (in `pyproject.toml` dev deps); existing suite under `tests/` |
+| **Config file** | `pyproject.toml` (dev deps); `tests/conftest.py` already exists |
 | **Quick run command** | `uv run pytest tests/test_nanoclaw_adapter.py -x -q` |
 | **Full suite command** | `uv run pytest tests/ -q` |
 | **Estimated runtime** | ~5 seconds (unit tests; synthetic outbound.db in tmp_path) |
@@ -54,11 +54,13 @@ created: 2026-05-31
 
 ## Wave 0 Requirements
 
-- [ ] `uv add --dev pytest` — install the test framework (none detected)
-- [ ] `tests/conftest.py` — shared fixtures (tmp_path-based synthetic outbound.db builder, fake session dir)
+- [x] pytest framework — ALREADY PRESENT (pytest 9.0.3 in dev deps; `tests/conftest.py` exists). No install task needed.
 - [ ] `tests/test_nanoclaw_adapter.py` — stubs for REQ-STATUS, REQ-TIMEOUT, REQ-ENDSTATE, REQ-DELIVERABLE
+- [ ] Extend `tests/conftest.py` (or add fixtures locally) — tmp_path-based synthetic outbound.db builder, fake session dir
 - [ ] Human setup (cannot be unit-automated): add Harvey LAB paths to `~/.config/nanoclaw/mount-allowlist.json` (currently `allowedRoots: []` — silently drops all extra mounts)
 - [ ] Human setup: ensure a LAB nanoclaw group configured for Anthropic Claude exists (the `_ping-test` group uses Ollama)
+
+*If none: "Existing infrastructure covers all phase requirements." — pytest infra exists; only the new test file + fixtures + human nanoclaw setup remain.*
 
 ---
 

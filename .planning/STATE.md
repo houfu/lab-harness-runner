@@ -26,11 +26,14 @@ Executing Phase 3: Implement Nanoclaw-LQ Adapter.
 
 ## Current Phase
 
-Phase 3: Implement Nanoclaw-LQ Adapter — Plan 02 complete.
+Phase 3: Implement Nanoclaw-LQ Adapter — Plans 01 & 02 complete; Plan 03 PAUSED at human-action checkpoint (Task 1).
 
 ## Next Action
 
-Execute Phase 3 Plan 03: Integration smoke test and human checkpoint (daemon + Docker required).
+Resume Phase 3 Plan 03 (`/gsd-execute-phase 3`). Blocked on one-time human setup:
+(1) add `/Users/houfu/Projects/harvey-labs` to `~/.config/nanoclaw/mount-allowlist.json` allowedRoots (allowReadWrite:true) — currently empty;
+(2) create/confirm an Anthropic-Claude nanoclaw agent group and record its group id (the `_ping-test` group uses Ollama and is unusable).
+Daemon socket + Docker confirmed up; proof-task documents present. Then run the proof task end-to-end.
 
 ## Decisions
 
@@ -61,3 +64,4 @@ Execute Phase 3 Plan 03: Integration smoke test and human checkpoint (daemon + D
 
 - 2026-05-31T00:32:39Z: Completed 03-01-PLAN.md (NanoclawAdapter core logic and tests)
 - 2026-05-31T00:40:15Z: Completed 03-02-PLAN.md (dispatch shim, mount wiring, CLI, dispatch test)
+- 2026-05-31: Paused 03-03-PLAN.md at blocking human-action checkpoint (Task 1) — awaiting mount-allowlist edit + Anthropic-Claude LAB group id. Phase verification intentionally NOT run; phase remains incomplete.

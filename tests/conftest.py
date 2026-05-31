@@ -1,4 +1,5 @@
 """Shared pytest fixtures for lab_harness_runner tests."""
+
 from __future__ import annotations
 
 import json

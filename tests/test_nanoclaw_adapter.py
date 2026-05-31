@@ -1,4 +1,5 @@
 """Failing tests for NanoclawAdapter — TDD RED phase for Task 2."""
+
 from __future__ import annotations
 
 import json
@@ -21,7 +22,9 @@ def test_poll_status_done_returns_clean(outbound_db: Path) -> None:
     conn.close()
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
-    result = adapter._poll_for_status(outbound_db, timeout_seconds=5.0, poll_interval=0.1)
+    result = adapter._poll_for_status(
+        outbound_db, timeout_seconds=5.0, poll_interval=0.1
+    )
     assert result == "clean"
 
 
@@ -38,7 +41,9 @@ def test_poll_status_error_returns_agent_error(outbound_db: Path) -> None:
     conn.close()
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
-    result = adapter._poll_for_status(outbound_db, timeout_seconds=5.0, poll_interval=0.1)
+    result = adapter._poll_for_status(
+        outbound_db, timeout_seconds=5.0, poll_interval=0.1
+    )
     assert result == "agent_error"
 
 
@@ -55,7 +60,9 @@ def test_poll_non_done_status_returns_agent_error(outbound_db: Path) -> None:
     conn.close()
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
-    result = adapter._poll_for_status(outbound_db, timeout_seconds=5.0, poll_interval=0.1)
+    result = adapter._poll_for_status(
+        outbound_db, timeout_seconds=5.0, poll_interval=0.1
+    )
     assert result == "agent_error"
 
 
@@ -64,7 +71,9 @@ def test_poll_timeout_returns_timeout(outbound_db: Path) -> None:
     from lab_harness_runner.nanoclaw_adapter import NanoclawAdapter
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
-    result = adapter._poll_for_status(outbound_db, timeout_seconds=0.3, poll_interval=0.1)
+    result = adapter._poll_for_status(
+        outbound_db, timeout_seconds=0.3, poll_interval=0.1
+    )
     assert result == "timeout"
 
 
@@ -74,7 +83,9 @@ def test_poll_missing_db_does_not_raise(tmp_path: Path) -> None:
 
     missing_path = tmp_path / "nonexistent" / "outbound.db"
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
-    result = adapter._poll_for_status(missing_path, timeout_seconds=0.3, poll_interval=0.1)
+    result = adapter._poll_for_status(
+        missing_path, timeout_seconds=0.3, poll_interval=0.1
+    )
     assert result == "timeout"
 
 

@@ -169,6 +169,27 @@ def test_score_run_validates_in_output_dir_not_run_dir(tmp_path):
     assert "report.docx" in str(exc_info.value)
 
 
+def test_score_run_rejects_unsafe_expected_deliverable_before_subprocess(tmp_path):
+    """score_run rejects traversal deliverable names before checking the filesystem."""
+    from lab_harness_runner.evaluator import score_run
+
+    run_dir = tmp_path / "results" / "run-id"
+    output_dir = run_dir / "output"
+    output_dir.mkdir(parents=True)
+    (run_dir / "outside.docx").write_text("wrong location", encoding="utf-8")
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        with pytest.raises(ValueError):
+            score_run(
+                lab_path=tmp_path,
+                run_id="run-id",
+                task_id="area/task",
+                expected_deliverables=["../outside.docx"],
+            )
+
+    mock_run.assert_not_called()
+
+
 def test_score_run_raises_before_subprocess_when_missing(tmp_path):
     """score_run raises FileNotFoundError BEFORE subprocess when deliverable missing."""
     from lab_harness_runner.evaluator import score_run
@@ -264,8 +285,17 @@ def test_report_path_for_run_returns_lab_report_html_path(tmp_path):
 def test_compare_run_task_invokes_lab_compare_and_returns_artifact_paths(tmp_path):
     from lab_harness_runner.evaluator import compare_run
 
+    dashboard_path = (
+        tmp_path / "results" / "comparisons" / "area" / "task" / "comparison.html"
+    )
+
+    def create_dashboard(*args, **kwargs):
+        dashboard_path.parent.mkdir(parents=True)
+        dashboard_path.write_text("dashboard", encoding="utf-8")
+        return MagicMock(returncode=0)
+
     with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.side_effect = create_dashboard
         paths = compare_run(tmp_path, mode="task", task_id="area/task")
 
     mock_run.assert_called_once_with(
@@ -283,16 +313,21 @@ def test_compare_run_task_invokes_lab_compare_and_returns_artifact_paths(tmp_pat
         capture_output=True,
         text=True,
     )
-    assert paths == [
-        tmp_path / "results" / "comparisons" / "area" / "task" / "comparison.html"
-    ]
+    assert paths == [dashboard_path]
 
 
 def test_compare_run_area_invokes_lab_compare_for_task_area(tmp_path):
     from lab_harness_runner.evaluator import compare_run
 
+    dashboard_path = tmp_path / "results" / "comparisons" / "area" / "comparison.html"
+
+    def create_dashboard(*args, **kwargs):
+        dashboard_path.parent.mkdir(parents=True)
+        dashboard_path.write_text("dashboard", encoding="utf-8")
+        return MagicMock(returncode=0)
+
     with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.side_effect = create_dashboard
         paths = compare_run(tmp_path, mode="area", task_id="area/task")
 
     cmd = mock_run.call_args.args[0]
@@ -303,8 +338,17 @@ def test_compare_run_area_invokes_lab_compare_for_task_area(tmp_path):
 def test_compare_run_all_invokes_lab_compare_global(tmp_path):
     from lab_harness_runner.evaluator import compare_run
 
+    dashboard_path = (
+        tmp_path / "results" / "comparisons" / "_global" / "comparison.html"
+    )
+
+    def create_dashboard(*args, **kwargs):
+        dashboard_path.parent.mkdir(parents=True)
+        dashboard_path.write_text("dashboard", encoding="utf-8")
+        return MagicMock(returncode=0)
+
     with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.side_effect = create_dashboard
         paths = compare_run(tmp_path, mode="all", task_id="area/task")
 
     cmd = mock_run.call_args.args[0]
@@ -322,3 +366,12 @@ def test_compare_run_validates_inputs_before_subprocess(tmp_path):
             compare_run(tmp_path, mode="task", task_id="../area/task")
 
     mock_run.assert_not_called()
+
+
+def test_compare_run_raises_when_lab_does_not_create_dashboard(tmp_path):
+    from lab_harness_runner.evaluator import compare_run
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        with pytest.raises(FileNotFoundError, match="LAB comparison did not create"):
+            compare_run(tmp_path, mode="task", task_id="area/task")

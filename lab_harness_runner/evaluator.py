@@ -28,9 +28,13 @@ def score_run(
     output_dir = lab_path / "results" / run_id / "output"
 
     # D-11: pre-score validation — check output_dir, not run_dir (Pitfall 4)
-    missing = [
-        name for name in expected_deliverables if not (output_dir / name).exists()
-    ]
+    missing = []
+    for name in expected_deliverables:
+        deliverable_path = _reject_unsafe_relative_path(
+            name, "expected_deliverable"
+        )
+        if not (output_dir / deliverable_path).exists():
+            missing.append(name)
     if missing:
         raise FileNotFoundError(
             f"Missing deliverables in {output_dir}: {', '.join(missing)}"
@@ -114,5 +118,8 @@ def compare_run(
             output=exc.output,
             stderr=exc.stderr,
         ) from exc
+
+    if not dashboard_path.exists():
+        raise FileNotFoundError(f"LAB comparison did not create {dashboard_path}")
 
     return [dashboard_path]

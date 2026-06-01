@@ -3,22 +3,22 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-01T15:23:36.963Z"
+last_updated: "2026-06-01T16:10:41.809Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 13
-  completed_plans: 9
-  percent: 69
+  completed_plans: 10
+  percent: 75
 ---
 
 # State
 
-Updated: 2026-05-31
+Updated: 2026-06-01
 
 ## Current Mode
 
-Phase 3 complete. Ready for Phase 4: Completion, Metrics, Evaluation, And Scale-Out.
+Phase 4 in progress. Plan 04-01 is complete; ready for Plan 04-02.
 
 ## Source Documents
 
@@ -26,16 +26,11 @@ Phase 3 complete. Ready for Phase 4: Completion, Metrics, Evaluation, And Scale-
 
 ## Current Phase
 
-Phase 3: Implement Nanoclaw-LQ Adapter — complete. Plans 01, 02, and 03 are complete.
+Phase 4: Completion, Metrics, Evaluation, And Scale-Out — in progress. Plan 01 is complete.
 
 ## Next Action
 
-Start or verify the next step:
-
-- `$gsd-verify-work 3` to run formal Phase 3 verification, or
-- `$gsd-discuss-phase 4` / `$gsd-plan-phase 4` to begin Completion, Metrics, Evaluation, And Scale-Out.
-
-Carry forward the Phase 3 status semantics issue: run `69f75ee0-84e2-44ca-a906-0bca7da7baae` produced the expected deliverable, but `metrics.json` records `end_state: "timeout"`. Phase 4 should represent terminal status and deliverable presence separately rather than rewriting timeout to clean.
+Execute 04-02-PLAN.md: Primary LAB-compatible benchmark command and report preservation.
 
 ## Decisions
 
@@ -45,6 +40,8 @@ Carry forward the Phase 3 status semantics issue: run `69f75ee0-84e2-44ca-a906-0
 - Central DB path is nanoclaw_dir/data/v2.db confirmed from nanoclaw-lq/src/index.ts (03-02)
 - Shim JSON stdout carries both sessionId and outboundDbPath so adapter needs no path reconstruction (03-02)
 - Phase 3 Plan 03 accepted deliverable presence as sufficient for the phase exit criterion while preserving `end_state: "timeout"` as a truthful metric. Phase 4 must clarify mixed states where output exists but no clean terminal STATUS signal is observed. (03-03)
+- [Phase 04]: Timeout runs with all expected deliverables present derive benchmark_status=clean while preserving raw_end_state=timeout.
+- [Phase 04]: Metrics diagnostics merge after LAB-compatible keys and omit JSON null values.
 
 ## Notes
 
@@ -70,3 +67,4 @@ Carry forward the Phase 3 status semantics issue: run `69f75ee0-84e2-44ca-a906-0
 - 2026-05-31: Paused 03-03-PLAN.md at blocking human-action checkpoint (Task 1) — awaiting mount-allowlist edit + Anthropic-Claude LAB group id. Phase verification intentionally NOT run; phase remains incomplete.
 - 2026-06-01: Resumed 03-03-PLAN.md. Mount allowlist contains `/Users/houfu/Projects/harvey-labs`, nanoclaw logs show group `lab-runner` id `820628bb-c260-4bb4-bd60-b5a3b9ce4f58`, and proof deliverable exists for run `69f75ee0-84e2-44ca-a906-0bca7da7baae`; paused at human-verify because metrics recorded `end_state: "timeout"` rather than `clean`.
 - 2026-06-01T02:53:47Z: User approved run `69f75ee0-84e2-44ca-a906-0bca7da7baae` as sufficient for Phase 3 despite `end_state: "timeout"` because the expected `discrepancy-analysis-memo.docx` exists and contains generated analysis. Created 03-03-SUMMARY.md and marked Phase 3 complete.
+- 2026-06-01T16:09:10Z: Completed 04-01-PLAN.md (benchmark-facing status derivation and enriched metrics diagnostics). 62 tests pass.

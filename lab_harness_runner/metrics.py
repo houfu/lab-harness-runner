@@ -6,7 +6,25 @@ from pathlib import Path
 from lab_harness_runner.adapter import RunResult
 
 
-def write_metrics(run_dir: Path, result: RunResult) -> Path:
+def _without_null_values(value: object) -> object:
+    if isinstance(value, dict):
+        return {
+            key: _without_null_values(item)
+            for key, item in value.items()
+            if item is not None
+        }
+    if isinstance(value, list):
+        return [_without_null_values(item) for item in value if item is not None]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def write_metrics(
+    run_dir: Path,
+    result: RunResult,
+    extra_fields: dict[str, object] | None = None,
+) -> Path:
     """Write metrics.json to run_dir. Always succeeds with safe defaults.
 
     Returns the path to the written metrics.json file.
@@ -37,6 +55,9 @@ def write_metrics(run_dir: Path, result: RunResult) -> Path:
         ),
         "end_state": result.end_state,
     }
+    if extra_fields:
+        metrics.update(_without_null_values(extra_fields))
+
     path = run_dir / "metrics.json"
     path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     return path

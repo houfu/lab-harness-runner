@@ -173,3 +173,60 @@ def test_write_metrics_no_task_title(tmp_path):
     data = json.loads(path.read_text(encoding="utf-8"))
 
     assert "task_title" not in data
+
+
+def test_write_metrics_accepts_old_two_argument_call(tmp_path):
+    """write_metrics remains backwards-compatible without diagnostic fields."""
+    from lab_harness_runner.metrics import write_metrics
+
+    result = RunResult(
+        run_id="test-run-8",
+        end_state="clean",
+        wall_clock_seconds=1.0,
+    )
+    path = write_metrics(tmp_path, result)
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+    assert data["end_state"] == "clean"
+    assert "benchmark_status" not in data
+
+
+def test_write_metrics_writes_diagnostic_fields_without_null_values(tmp_path):
+    """Diagnostic fields are merged after LAB keys and do not write JSON null."""
+    from lab_harness_runner.metrics import write_metrics
+
+    result = RunResult(
+        run_id="test-run-9",
+        end_state="timeout",
+        wall_clock_seconds=30.0,
+    )
+    diagnostics = {
+        "task_id": "corporate-ma/example-task",
+        "run_id": "test-run-9",
+        "adapter": "nanoclaw",
+        "raw_end_state": "timeout",
+        "benchmark_status": "clean",
+        "terminal_status_seen": False,
+        "completion_signal": "",
+        "expected_deliverables_present": True,
+        "missing_deliverables": [],
+        "run_dir": tmp_path,
+        "output_dir": str(tmp_path / "output"),
+        "omit_me": None,
+    }
+
+    path = write_metrics(tmp_path, result, extra_fields=diagnostics)
+    raw_text = path.read_text(encoding="utf-8")
+    data = json.loads(raw_text)
+
+    assert "null" not in raw_text
+    assert data["end_state"] == "timeout"
+    assert data["benchmark_status"] == "clean"
+    assert data["raw_end_state"] == "timeout"
+    assert data["terminal_status_seen"] is False
+    assert data["completion_signal"] == ""
+    assert data["expected_deliverables_present"] is True
+    assert data["missing_deliverables"] == []
+    assert data["run_dir"] == str(tmp_path)
+    assert data["output_dir"] == str(tmp_path / "output")
+    assert "omit_me" not in data

@@ -79,6 +79,32 @@ def test_write_metrics_none_int_fields_default_to_zero(tmp_path):
     assert data["documents_skipped"] == 0
 
 
+def test_write_metrics_preserves_explicit_zero_values(tmp_path):
+    """Explicit zero metrics are written as zero, not null or omitted."""
+    from lab_harness_runner.metrics import write_metrics
+
+    result = RunResult(
+        run_id="test-run-zero",
+        end_state="clean",
+        wall_clock_seconds=0.0,
+        input_tokens=0,
+        output_tokens=0,
+        documents_read=0,
+        total_vdr_files=0,
+        documents_skipped=0,
+    )
+
+    path = write_metrics(tmp_path, result)
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+    assert data["wall_clock_seconds"] == 0.0
+    assert data["input_tokens"] == 0
+    assert data["output_tokens"] == 0
+    assert data["documents_read"] == 0
+    assert data["total_vdr_files"] == 0
+    assert data["documents_skipped"] == 0
+
+
 def test_write_metrics_empty_list_fields(tmp_path):
     """write_metrics with RunResult where documents_read_list is [] writes empty list."""
     from lab_harness_runner.metrics import write_metrics

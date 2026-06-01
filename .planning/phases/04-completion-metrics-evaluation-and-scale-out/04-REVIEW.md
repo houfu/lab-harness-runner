@@ -1,6 +1,6 @@
 ---
 phase: 04-completion-metrics-evaluation-and-scale-out
-reviewed: 2026-06-01T16:34:29Z
+reviewed: 2026-06-01T16:37:36Z
 depth: standard
 files_reviewed: 14
 files_reviewed_list:
@@ -19,73 +19,61 @@ files_reviewed_list:
   - tests/test_aggregation.py
   - tests/test_docs.py
 findings:
-  critical: 2
+  critical: 1
   warning: 0
   info: 0
-  total: 2
+  total: 1
 status: issues_found
 ---
 
 # Phase 04: Code Review Report
 
-**Reviewed:** 2026-06-01T16:34:29Z
+**Reviewed:** 2026-06-01T16:37:36Z
 **Depth:** standard
 **Files Reviewed:** 14
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the Phase 04 status, metrics, evaluator, aggregation, benchmark CLI, adapter guide, and associated tests. The implementation has two blocker-level issues: scoring validation can be bypassed with unsafe deliverable paths, and dashboard comparison reporting can claim a generated artifact when LAB produced none. The targeted tests pass, but they do not cover these failure modes.
+Re-reviewed the Phase 04 status, metrics, evaluator, aggregation, benchmark CLI, adapter guide, and associated tests after fix commit `9cd60d1`.
+
+Prior finding CR-01 is resolved: `score_run()` now validates each `expected_deliverables` entry with `_reject_unsafe_relative_path()` before checking the filesystem or invoking `subprocess.run()`, and `tests/test_evaluator.py` covers traversal rejection before subprocess invocation.
+
+Prior finding CR-02 is only partially resolved: `compare_run()` now rejects a missing dashboard path, but it still accepts a stale pre-existing dashboard file as evidence that the current LAB comparison generated a dashboard.
 
 Validation run during review:
 
-- `uv run pytest tests/test_status.py tests/test_metrics.py tests/test_evaluator.py tests/test_run_benchmark.py tests/test_aggregation.py tests/test_docs.py -q` - 57 passed
-- `uv run python scripts/run_benchmark.py --help` - passed
-- LAB batch pollution guard - passed
+- `uv run pytest tests/test_status.py tests/test_metrics.py tests/test_evaluator.py tests/test_run_benchmark.py tests/test_aggregation.py tests/test_docs.py -q` - 59 passed
 
 ## Narrative Findings (AI reviewer)
 
 ## Critical Issues
 
-### CR-01 [BLOCKER]: Scoring pre-validation accepts traversal deliverable names
+### CR-01 [BLOCKER]: `--compare` can still report a stale dashboard that LAB did not generate for this run
 
-**File:** `lab_harness_runner/evaluator.py:31`
+**File:** `lab_harness_runner/evaluator.py:122`
 
-**Issue:** `score_run()` validates `run_id` and `task_id`, but it joins every `expected_deliverables` entry directly with `output_dir` at lines 31-33. A deliverable like `../outside.docx` is treated as `results/<run-id>/output/../outside.docx`, so scoring can proceed when the file exists in the run directory but not in `output/`. This contradicts the Phase 04 path-safety requirement and the new `status.py` behavior. I verified this path calls the evaluator subprocess when `results/<run-id>/outside.docx` exists and `expected_deliverables=["../outside.docx"]`.
-
-**Fix:**
-
-```python
-missing = []
-for name in expected_deliverables:
-    deliverable_path = _reject_unsafe_relative_path(name, "expected_deliverable")
-    if not (output_dir / deliverable_path).exists():
-        missing.append(name)
-```
-
-Add a regression test in `tests/test_evaluator.py` asserting unsafe deliverable names raise `ValueError` before `subprocess.run()`.
-
-### CR-02 [BLOCKER]: `--compare` can report a dashboard path that LAB never generated
-
-**File:** `lab_harness_runner/evaluator.py:102`
-
-**Issue:** `compare_run()` assumes LAB created `comparison.html` whenever `evaluation.compare` exits zero, then returns the expected path at line 118 without checking that it exists. LAB's compare command exits successfully even when no scored runs are found for a task/area/global scope, and it skips runs without `config.json`. The new benchmark runner writes `metrics.json` and invokes `run_eval`, but it does not create a LAB-compatible per-run `config.json`, so a freshly scored runner output can be invisible to LAB comparison while `scripts/run_benchmark.py` still records `dashboard_paths` as if the dashboard exists.
+**Issue:** `compare_run()` checks `dashboard_path.exists()` only after `evaluation.compare` exits successfully. That prevents reporting a path when no file exists, but it does not prove LAB generated the dashboard during this invocation. If `results/comparisons/<scope>/comparison.html` already exists from a previous run and the current `evaluation.compare` exits zero without producing a new dashboard, line 122 passes and `scripts/run_benchmark.py` records `dashboard_paths` anyway. This violates the requirement that compare output should not be reported unless LAB actually generated the dashboard file for the current compare operation.
 
 **Fix:**
 
-Create or preserve the per-run LAB metadata required by `evaluation.compare` before invoking comparison, or make compare explicitly fail when LAB does not produce the expected artifact. At minimum:
+Record the dashboard file's pre-run state and require creation or modification after the subprocess starts. For example:
 
 ```python
+before_mtime = dashboard_path.stat().st_mtime_ns if dashboard_path.exists() else None
 subprocess.run(cmd, cwd=lab_path, check=True, capture_output=True, text=True)
 if not dashboard_path.exists():
     raise FileNotFoundError(f"LAB comparison did not create {dashboard_path}")
+after_mtime = dashboard_path.stat().st_mtime_ns
+if before_mtime is not None and after_mtime <= before_mtime:
+    raise FileNotFoundError(f"LAB comparison did not update {dashboard_path}")
 return [dashboard_path]
 ```
 
-Also add a command-level test that `--score --compare task` either writes the required `config.json` for the just-scored run or raises when `comparison.html` is absent, instead of returning a nonexistent dashboard path.
+Add a regression test where `comparison.html` exists before `compare_run()`, mocked LAB exits zero without touching it, and `compare_run()` raises instead of returning the stale path.
 
 ---
 
-_Reviewed: 2026-06-01T16:34:29Z_
+_Reviewed: 2026-06-01T16:37:36Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_

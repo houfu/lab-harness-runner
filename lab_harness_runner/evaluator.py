@@ -103,6 +103,8 @@ def compare_run(
     else:
         raise ValueError(f"compare mode must be one of task, area, all: {mode!r}")
 
+    before_mtime = dashboard_path.stat().st_mtime_ns if dashboard_path.exists() else None
+
     try:
         subprocess.run(
             cmd,
@@ -121,5 +123,8 @@ def compare_run(
 
     if not dashboard_path.exists():
         raise FileNotFoundError(f"LAB comparison did not create {dashboard_path}")
+    after_mtime = dashboard_path.stat().st_mtime_ns
+    if before_mtime is not None and after_mtime <= before_mtime:
+        raise FileNotFoundError(f"LAB comparison did not update {dashboard_path}")
 
     return [dashboard_path]

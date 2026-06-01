@@ -375,3 +375,18 @@ def test_compare_run_raises_when_lab_does_not_create_dashboard(tmp_path):
         mock_run.return_value = MagicMock(returncode=0)
         with pytest.raises(FileNotFoundError, match="LAB comparison did not create"):
             compare_run(tmp_path, mode="task", task_id="area/task")
+
+
+def test_compare_run_raises_when_lab_only_leaves_stale_dashboard(tmp_path):
+    from lab_harness_runner.evaluator import compare_run
+
+    dashboard_path = (
+        tmp_path / "results" / "comparisons" / "area" / "task" / "comparison.html"
+    )
+    dashboard_path.parent.mkdir(parents=True)
+    dashboard_path.write_text("stale dashboard", encoding="utf-8")
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        with pytest.raises(FileNotFoundError, match="LAB comparison did not update"):
+            compare_run(tmp_path, mode="task", task_id="area/task")

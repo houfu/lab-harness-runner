@@ -1,6 +1,6 @@
 ---
 phase: 04-completion-metrics-evaluation-and-scale-out
-reviewed: 2026-06-01T16:37:36Z
+reviewed: 2026-06-01T16:40:30Z
 depth: standard
 files_reviewed: 14
 files_reviewed_list:
@@ -19,8 +19,8 @@ files_reviewed_list:
   - tests/test_aggregation.py
   - tests/test_docs.py
 findings:
-  critical: 1
-  warning: 0
+  critical: 0
+  warning: 1
   info: 0
   total: 1
 status: issues_found
@@ -28,52 +28,57 @@ status: issues_found
 
 # Phase 04: Code Review Report
 
-**Reviewed:** 2026-06-01T16:37:36Z
+**Reviewed:** 2026-06-01T16:40:30Z
 **Depth:** standard
 **Files Reviewed:** 14
 **Status:** issues_found
 
 ## Summary
 
-Re-reviewed the Phase 04 status, metrics, evaluator, aggregation, benchmark CLI, adapter guide, and associated tests after fix commit `9cd60d1`.
+Re-reviewed the Phase 04 status, metrics, evaluator, aggregation, benchmark CLI, compatibility wrapper, adapter guide, and associated tests after fix commits `9cd60d1` and `d9651a5`.
 
-Prior finding CR-01 is resolved: `score_run()` now validates each `expected_deliverables` entry with `_reject_unsafe_relative_path()` before checking the filesystem or invoking `subprocess.run()`, and `tests/test_evaluator.py` covers traversal rejection before subprocess invocation.
+Prior findings are resolved:
 
-Prior finding CR-02 is only partially resolved: `compare_run()` now rejects a missing dashboard path, but it still accepts a stale pre-existing dashboard file as evidence that the current LAB comparison generated a dashboard.
+- `score_run()` rejects unsafe `expected_deliverables` before checking the filesystem or invoking `subprocess.run()`.
+- `compare_run()` now fails when LAB does not create the expected dashboard.
+- `compare_run()` now fails when LAB leaves a stale pre-existing dashboard unchanged.
 
 Validation run during review:
 
-- `uv run pytest tests/test_status.py tests/test_metrics.py tests/test_evaluator.py tests/test_run_benchmark.py tests/test_aggregation.py tests/test_docs.py -q` - 59 passed
+- `uv run pytest tests/test_status.py tests/test_metrics.py tests/test_evaluator.py tests/test_run_benchmark.py tests/test_aggregation.py tests/test_docs.py -q` - 60 passed
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
+## Warnings
 
-### CR-01 [BLOCKER]: `--compare` can still report a stale dashboard that LAB did not generate for this run
+### WR-01 [WARNING]: Legacy `nanoclaw_run.py` exposes batch flags but routes them to the single-run path
 
-**File:** `lab_harness_runner/evaluator.py:122`
+**File:** `scripts/nanoclaw_run.py:17`
 
-**Issue:** `compare_run()` checks `dashboard_path.exists()` only after `evaluation.compare` exits successfully. That prevents reporting a path when no file exists, but it does not prove LAB generated the dashboard during this invocation. If `results/comparisons/<scope>/comparison.html` already exists from a previous run and the current `evaluation.compare` exits zero without producing a new dashboard, line 122 passes and `scripts/run_benchmark.py` records `dashboard_paths` anyway. This violates the requirement that compare output should not be reported unless LAB actually generated the dashboard file for the current compare operation.
+**Issue:** `scripts/nanoclaw_run.py` reuses `build_parser()` from the primary benchmark command, so its help and argument parsing accept repeated `--task`, `--tasks`, `--seeds`, and `--batch-id` batch options. The wrapper then always calls `run_single_benchmark(args)` at line 18. Batch invocations through this advertised compatibility entry point fail with the single-run validation error instead of running the batch flow, and that `ValueError` is not converted into a parser error or JSON output by this wrapper. The primary command works, but the compatibility command now has misleading CLI behavior.
 
-**Fix:**
-
-Record the dashboard file's pre-run state and require creation or modification after the subprocess starts. For example:
+**Fix:** Either keep the wrapper single-run by giving it a parser that does not expose batch-only flags, or delegate the same dispatch as `scripts/run_benchmark.py`:
 
 ```python
-before_mtime = dashboard_path.stat().st_mtime_ns if dashboard_path.exists() else None
-subprocess.run(cmd, cwd=lab_path, check=True, capture_output=True, text=True)
-if not dashboard_path.exists():
-    raise FileNotFoundError(f"LAB comparison did not create {dashboard_path}")
-after_mtime = dashboard_path.stat().st_mtime_ns
-if before_mtime is not None and after_mtime <= before_mtime:
-    raise FileNotFoundError(f"LAB comparison did not update {dashboard_path}")
-return [dashboard_path]
+from scripts.run_benchmark import build_parser, run_batch_benchmark, run_single_benchmark, _should_run_batch
+
+
+def main() -> int:
+    parser = build_parser()
+    parser.description = __doc__
+    parser.set_defaults(adapter="nanoclaw")
+    args = parser.parse_args()
+    try:
+        summary = run_batch_benchmark(args) if _should_run_batch(args) else run_single_benchmark(args)
+    except ValueError as exc:
+        parser.error(str(exc))
+    ...
 ```
 
-Add a regression test where `comparison.html` exists before `compare_run()`, mocked LAB exits zero without touching it, and `compare_run()` raises instead of returning the stale path.
+Add a regression test for `scripts.nanoclaw_run.main()` with `--tasks` or repeated `--task` so the compatibility entry point either rejects those flags at parse time or dispatches the batch implementation.
 
 ---
 
-_Reviewed: 2026-06-01T16:37:36Z_
+_Reviewed: 2026-06-01T16:40:30Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_

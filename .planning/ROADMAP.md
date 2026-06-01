@@ -119,7 +119,7 @@ Exit Criteria:
 - A run records clean/error/timeout status, writes metrics, invokes LAB scoring,
   and supports repeated runs with variance reporting.
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 **Wave 1**
@@ -128,7 +128,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-02-PLAN.md — Primary LAB-compatible benchmark command and report preservation
+- [x] 04-02-PLAN.md — Primary LAB-compatible benchmark command and report preservation
 
 **Wave 3** *(blocked on Wave 2 completion)*
 

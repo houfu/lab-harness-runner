@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-01T16:10:41.809Z"
+last_updated: "2026-06-01T16:17:14.326Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 75
 ---
 
@@ -18,7 +18,7 @@ Updated: 2026-06-01
 
 ## Current Mode
 
-Phase 4 in progress. Plan 04-01 is complete; ready for Plan 04-02.
+Phase 4 in progress. Plans 04-01 and 04-02 are complete; ready for Plan 04-03.
 
 ## Source Documents
 
@@ -26,11 +26,11 @@ Phase 4 in progress. Plan 04-01 is complete; ready for Plan 04-02.
 
 ## Current Phase
 
-Phase 4: Completion, Metrics, Evaluation, And Scale-Out — in progress. Plan 01 is complete.
+Phase 4: Completion, Metrics, Evaluation, And Scale-Out — in progress. Plans 01 and 02 are complete.
 
 ## Next Action
 
-Execute 04-02-PLAN.md: Primary LAB-compatible benchmark command and report preservation.
+Execute 04-03-PLAN.md: Multi-task multi-seed aggregation and variance reporting.
 
 ## Decisions
 
@@ -42,6 +42,8 @@ Execute 04-02-PLAN.md: Primary LAB-compatible benchmark command and report prese
 - Phase 3 Plan 03 accepted deliverable presence as sufficient for the phase exit criterion while preserving `end_state: "timeout"` as a truthful metric. Phase 4 must clarify mixed states where output exists but no clean terminal STATUS signal is observed. (03-03)
 - [Phase 04]: Timeout runs with all expected deliverables present derive benchmark_status=clean while preserving raw_end_state=timeout.
 - [Phase 04]: Metrics diagnostics merge after LAB-compatible keys and omit JSON null values.
+- [Phase 04]: run_benchmark.py is the primary nanoclaw benchmark CLI; nanoclaw_run.py delegates to it for compatibility.
+- [Phase 04]: LAB compare/dashboard generation is score-dependent and preserves dashboard artifacts at LAB-created comparison paths.
 
 ## Notes
 
@@ -68,3 +70,4 @@ Execute 04-02-PLAN.md: Primary LAB-compatible benchmark command and report prese
 - 2026-06-01: Resumed 03-03-PLAN.md. Mount allowlist contains `/Users/houfu/Projects/harvey-labs`, nanoclaw logs show group `lab-runner` id `820628bb-c260-4bb4-bd60-b5a3b9ce4f58`, and proof deliverable exists for run `69f75ee0-84e2-44ca-a906-0bca7da7baae`; paused at human-verify because metrics recorded `end_state: "timeout"` rather than `clean`.
 - 2026-06-01T02:53:47Z: User approved run `69f75ee0-84e2-44ca-a906-0bca7da7baae` as sufficient for Phase 3 despite `end_state: "timeout"` because the expected `discrepancy-analysis-memo.docx` exists and contains generated analysis. Created 03-03-SUMMARY.md and marked Phase 3 complete.
 - 2026-06-01T16:09:10Z: Completed 04-01-PLAN.md (benchmark-facing status derivation and enriched metrics diagnostics). 62 tests pass.
+- 2026-06-01T16:16:14Z: Completed 04-02-PLAN.md (primary benchmark command, report preservation, and optional LAB compare/dashboard paths). 78 tests pass.

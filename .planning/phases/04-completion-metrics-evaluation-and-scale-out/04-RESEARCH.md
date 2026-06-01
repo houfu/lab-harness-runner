@@ -407,17 +407,15 @@ class MyAdapter:
 | A2 | `seed` should be treated as run metadata and run-id suffix unless an adapter explicitly supports deterministic seed injection. | Common Pitfalls | Multi-seed results could be overclaimed as deterministic reproducibility. |
 | A3 | Batch warning signs such as dashboard pollution and missing-deliverable diagnostics are inferred from LAB scan behavior and current script gaps. | Common Pitfalls | Planner may need additional tests to validate warning signs. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should Phase 4 call LAB comparison dashboards automatically?**
    - What we know: LAB provides `evaluation.compare --task`, `--area`, and `--all`. [VERIFIED: /Users/houfu/Projects/harvey-labs/evaluation/compare.py]
-   - What's unclear: The Phase 4 context says preserve reports/dashboards, but does not require automatic dashboard generation for every batch. [VERIFIED: 04-CONTEXT.md]
-   - Recommendation: Preserve per-run `scores.json` and `report.html` by default; add an optional `--compare task|area|all` flag only if it can run without polluting batch metadata. [ASSUMED]
+   - Resolution: Dashboards are in Phase 4 scope as optional LAB compare/dashboard preservation through the primary benchmark command. The planned command should expose `--compare task|area|all` or an equivalent explicit flag that invokes LAB's existing comparison flow after scoring, records generated dashboard artifact paths in command output and aggregate metadata, and never moves per-run LAB result folders. Per-run `scores.json` and `report.html` remain the default preserved artifacts; compare/dashboard generation is opt-in because it depends on scored runs and LAB's result tree state. [VERIFIED: 04-CONTEXT.md; docs/verified-contracts.md]
 
 2. **How should deterministic seed support be exposed?**
    - What we know: Existing scripts do not expose a seed flag to nanoclaw. [VERIFIED: scripts/nanoclaw_run.py]
-   - What's unclear: nanoclaw/model execution may not support deterministic seed injection. [ASSUMED]
-   - Recommendation: Add `seed` as metadata for repeated trials and document that it is not a deterministic model seed unless the adapter implements seed handling. [ASSUMED]
+   - Resolution: Deterministic seeds are represented as benchmark metadata and iteration identifiers where adapters cannot force model determinism. The multi-seed loop should record `seed` in metrics/aggregate rows and may use it in run-id suffixes for traceability, but docs and summaries must not claim deterministic reproducibility unless a specific adapter implements and verifies seed injection. [ASSUMED]
 
 ## Environment Availability
 

@@ -251,3 +251,70 @@ def test_score_run_custom_judge_model(tmp_path):
     assert "--judge-model" in cmd
     idx = cmd.index("--judge-model")
     assert cmd[idx + 1] == "claude-opus-4"
+
+
+def test_report_path_for_run_returns_lab_report_html_path(tmp_path):
+    from lab_harness_runner.evaluator import report_path_for_run
+
+    assert report_path_for_run(tmp_path, "run-id") == (
+        tmp_path / "results" / "run-id" / "report.html"
+    )
+
+
+def test_compare_run_task_invokes_lab_compare_and_returns_artifact_paths(tmp_path):
+    from lab_harness_runner.evaluator import compare_run
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        paths = compare_run(tmp_path, mode="task", task_id="area/task")
+
+    mock_run.assert_called_once_with(
+        [
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "evaluation.compare",
+            "--task",
+            "area/task",
+        ],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert paths == [tmp_path / "results" / "comparisons" / "area" / "task" / "comparison.html"]
+
+
+def test_compare_run_area_invokes_lab_compare_for_task_area(tmp_path):
+    from lab_harness_runner.evaluator import compare_run
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        paths = compare_run(tmp_path, mode="area", task_id="area/task")
+
+    cmd = mock_run.call_args.args[0]
+    assert cmd[-2:] == ["--area", "area"]
+    assert paths == [tmp_path / "results" / "comparisons" / "area" / "comparison.html"]
+
+
+def test_compare_run_all_invokes_lab_compare_global(tmp_path):
+    from lab_harness_runner.evaluator import compare_run
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        paths = compare_run(tmp_path, mode="all", task_id="area/task")
+
+    cmd = mock_run.call_args.args[0]
+    assert cmd[-1] == "--all"
+    assert paths == [tmp_path / "results" / "comparisons" / "_global" / "comparison.html"]
+
+
+def test_compare_run_validates_inputs_before_subprocess(tmp_path):
+    from lab_harness_runner.evaluator import compare_run
+
+    with patch("lab_harness_runner.evaluator.subprocess.run") as mock_run:
+        with pytest.raises(ValueError):
+            compare_run(tmp_path, mode="task", task_id="../area/task")
+
+    mock_run.assert_not_called()

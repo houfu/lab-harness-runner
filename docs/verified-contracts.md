@@ -3,11 +3,16 @@
 Phase 1 verifies the live interfaces this project will depend on before any
 nanoclaw adapter code is built.
 
+Path placeholders:
+
+- `<harvey-labs>`: local checkout of Harvey LAB.
+- `<nanoclaw-lq>`: local checkout of nanoclaw-lq.
+
 ## Harvey LAB Contracts
 
 ### Task Schema
 
-Task IDs are slash-separated paths under `/Users/houfu/Projects/harvey-labs/tasks`.
+Task IDs are slash-separated paths under `<harvey-labs>/tasks`.
 The evaluator requires each task's `task.json` to include:
 
 - `title`
@@ -27,11 +32,11 @@ The built-in LAB harness loader can fall back to `instructions.md` when
 
 Evidence:
 
-- `/Users/houfu/Projects/harvey-labs/evaluation/run_eval.py:26`
-- `/Users/houfu/Projects/harvey-labs/evaluation/run_eval.py:30`
-- `/Users/houfu/Projects/harvey-labs/harness/run.py:32`
-- `/Users/houfu/Projects/harvey-labs/harness/run.py:53`
-- `/Users/houfu/Projects/harvey-labs/harness/run.py:58`
+- `<harvey-labs>/evaluation/run_eval.py:26`
+- `<harvey-labs>/evaluation/run_eval.py:30`
+- `<harvey-labs>/harness/run.py:32`
+- `<harvey-labs>/harness/run.py:53`
+- `<harvey-labs>/harness/run.py:58`
 
 Implementation consequence: the package should read task JSON directly, extract
 instructions from `task.json`, and only support `instructions.md` fallback as a
@@ -41,11 +46,11 @@ compatibility helper after confirming evaluator behavior for that task.
 
 LAB resolves runs under:
 
-`/Users/houfu/Projects/harvey-labs/results/<run-id>/`
+`<harvey-labs>/results/<run-id>/`
 
 The scorer reads agent output from:
 
-`/Users/houfu/Projects/harvey-labs/results/<run-id>/output/`
+`<harvey-labs>/results/<run-id>/output/`
 
 `metrics.json` is optional, but when present LAB reads:
 
@@ -60,9 +65,9 @@ The scorer reads agent output from:
 
 Evidence:
 
-- `/Users/houfu/Projects/harvey-labs/evaluation/run_eval.py:24`
-- `/Users/houfu/Projects/harvey-labs/evaluation/run_eval.py:88`
-- `/Users/houfu/Projects/harvey-labs/evaluation/run_eval.py:137`
+- `<harvey-labs>/evaluation/run_eval.py:24`
+- `<harvey-labs>/evaluation/run_eval.py:88`
+- `<harvey-labs>/evaluation/run_eval.py:137`
 
 Implementation consequence: the package should always create
 `results/<run-id>/output/` and write `metrics.json` with safe defaults, even when
@@ -81,10 +86,10 @@ report module writes `report.html`.
 
 Evidence:
 
-- `/Users/houfu/Projects/harvey-labs/evaluation/run_eval.py:154`
-- `/Users/houfu/Projects/harvey-labs/evaluation/run_eval.py:178`
-- `/Users/houfu/Projects/harvey-labs/evaluation/report.py:1`
-- `/Users/houfu/Projects/harvey-labs/evaluation/report.py:19`
+- `<harvey-labs>/evaluation/run_eval.py:154`
+- `<harvey-labs>/evaluation/run_eval.py:178`
+- `<harvey-labs>/evaluation/report.py:1`
+- `<harvey-labs>/evaluation/report.py:19`
 
 Implementation consequence: live evaluation should be an explicit step because
 the judge may require API credentials and external model calls. Dry-run
@@ -98,10 +103,10 @@ exact filenames remove that failure mode.
 
 Evidence:
 
-- `/Users/houfu/Projects/harvey-labs/evaluation/scoring.py:128`
-- `/Users/houfu/Projects/harvey-labs/evaluation/scoring.py:315`
-- `/Users/houfu/Projects/harvey-labs/evaluation/scoring.py:375`
-- `/Users/houfu/Projects/harvey-labs/docs/eval-strategies.md:11`
+- `<harvey-labs>/evaluation/scoring.py:128`
+- `<harvey-labs>/evaluation/scoring.py:315`
+- `<harvey-labs>/evaluation/scoring.py:375`
+- `<harvey-labs>/docs/eval-strategies.md:11`
 
 Implementation consequence: the package should extract unique expected filenames
 from `criteria[].deliverables` and fail its own pre-score sanity check if any
@@ -121,12 +126,12 @@ avoid cross-mount SQLite write contention.
 
 Evidence:
 
-- `/Users/houfu/Projects/nanoclaw-lq/src/session-manager.ts:1`
-- `/Users/houfu/Projects/nanoclaw-lq/src/session-manager.ts:56`
-- `/Users/houfu/Projects/nanoclaw-lq/src/session-manager.ts:61`
-- `/Users/houfu/Projects/nanoclaw-lq/src/db/schema.ts:148`
-- `/Users/houfu/Projects/nanoclaw-lq/src/db/schema.ts:157`
-- `/Users/houfu/Projects/nanoclaw-lq/src/db/schema.ts:221`
+- `<nanoclaw-lq>/src/session-manager.ts:1`
+- `<nanoclaw-lq>/src/session-manager.ts:56`
+- `<nanoclaw-lq>/src/session-manager.ts:61`
+- `<nanoclaw-lq>/src/db/schema.ts:148`
+- `<nanoclaw-lq>/src/db/schema.ts:157`
+- `<nanoclaw-lq>/src/db/schema.ts:221`
 
 Implementation consequence: adapter code should prefer nanoclaw's existing
 session APIs where practical. If it writes directly, it must preserve the
@@ -144,12 +149,12 @@ The agent runner discovers additional directories mounted under
 
 Evidence:
 
-- `/Users/houfu/Projects/nanoclaw-lq/src/container-config.ts:26`
-- `/Users/houfu/Projects/nanoclaw-lq/src/container-config.ts:50`
-- `/Users/houfu/Projects/nanoclaw-lq/src/container-runner.ts:267`
-- `/Users/houfu/Projects/nanoclaw-lq/src/container-runner.ts:270`
-- `/Users/houfu/Projects/nanoclaw-lq/src/container-runner.ts:323`
-- `/Users/houfu/Projects/nanoclaw-lq/container/agent-runner/src/index.ts:56`
+- `<nanoclaw-lq>/src/container-config.ts:26`
+- `<nanoclaw-lq>/src/container-config.ts:50`
+- `<nanoclaw-lq>/src/container-runner.ts:267`
+- `<nanoclaw-lq>/src/container-runner.ts:270`
+- `<nanoclaw-lq>/src/container-runner.ts:323`
+- `<nanoclaw-lq>/container/agent-runner/src/index.ts:56`
 
 Implementation consequence: mount LAB documents and LAB output as explicit
 additional mounts under stable paths such as `/workspace/extra/lab-documents`
@@ -164,9 +169,9 @@ read-only inside the container. Per-group editable memory lives in
 
 Evidence:
 
-- `/Users/houfu/Projects/nanoclaw-lq/src/claude-md-compose.ts:1`
-- `/Users/houfu/Projects/nanoclaw-lq/src/claude-md-compose.ts:48`
-- `/Users/houfu/Projects/nanoclaw-lq/src/claude-md-compose.ts:119`
+- `<nanoclaw-lq>/src/claude-md-compose.ts:1`
+- `<nanoclaw-lq>/src/claude-md-compose.ts:48`
+- `<nanoclaw-lq>/src/claude-md-compose.ts:119`
 
 Implementation consequence: avoid mutating an existing nanoclaw group for LAB
 runs. Prefer a dedicated LAB group or put the task-specific briefing in the
@@ -174,6 +179,6 @@ first inbound task message.
 
 ## Phase 1 Boundary
 
-Phase 1 does not change `/Users/houfu/Projects/nanoclaw-lq`. It verifies the
+Phase 1 does not change `<nanoclaw-lq>`. It verifies the
 contracts and creates a deterministic LAB result-layout probe. Real nanoclaw
 adapter work starts in a later phase.

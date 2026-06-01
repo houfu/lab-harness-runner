@@ -4,6 +4,12 @@ from pathlib import Path
 
 
 GUIDE_PATH = Path("docs/adapter-guide.md")
+PUBLIC_DOC_PATHS = [
+    Path("README.md"),
+    Path("docs/adapter-guide.md"),
+    Path("docs/verified-contracts.md"),
+    Path("docs/phase-1-manual-check.md"),
+]
 
 
 def guide_text() -> str:
@@ -26,7 +32,7 @@ def test_adapter_guide_documents_required_contract_terms() -> None:
         "missing_deliverables",
         "metrics.json",
         "summary.json",
-        "/Users/houfu/Projects/harvey-labs/results/<run-id>/",
+        "results/<run-id>/",
     ]
 
     for term in required_terms:
@@ -56,3 +62,11 @@ def test_adapter_guide_mentions_second_adapter_without_implementation() -> None:
         if path.name not in allowed
     ]
     assert extra_adapters == []
+
+
+def test_public_docs_do_not_reference_local_user_paths() -> None:
+    for path in PUBLIC_DOC_PATHS:
+        assert path.exists(), f"{path} must exist"
+        text = path.read_text(encoding="utf-8")
+        assert "/Users/" not in text
+        assert "/Users/houfu" not in text

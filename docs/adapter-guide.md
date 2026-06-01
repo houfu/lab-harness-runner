@@ -3,7 +3,7 @@
 This guide is for adding harness adapters to `lab-harness-runner`. It is an
 implementation contract, not public onboarding material. LAB remains an
 unmodified dependency, and every per-run result stays in the LAB checkout under
-`/Users/houfu/Projects/harvey-labs/results/<run-id>/`.
+`../harvey-labs/results/<run-id>/`.
 
 ## Contract
 
@@ -62,11 +62,11 @@ internals are nanoclaw-specific details, not universal adapter requirements.
 
 LAB-compatible output layout is fixed:
 
-- Run directory: `/Users/houfu/Projects/harvey-labs/results/<run-id>/`
-- Deliverables: `/Users/houfu/Projects/harvey-labs/results/<run-id>/output/`
-- Metrics: `/Users/houfu/Projects/harvey-labs/results/<run-id>/metrics.json`
-- Scores: `/Users/houfu/Projects/harvey-labs/results/<run-id>/scores.json`
-- Report: `/Users/houfu/Projects/harvey-labs/results/<run-id>/report.html`
+- Run directory: `../harvey-labs/results/<run-id>/`
+- Deliverables: `../harvey-labs/results/<run-id>/output/`
+- Metrics: `../harvey-labs/results/<run-id>/metrics.json`
+- Scores: `../harvey-labs/results/<run-id>/scores.json`
+- Report: `../harvey-labs/results/<run-id>/report.html`
 
 The runner validates `TaskSpec.expected_deliverables` against files in
 `output_dir` before scoring. Exact filenames are expected because LAB may do
@@ -218,7 +218,7 @@ The future adapter should reuse `TaskSpec`, `RunResult`,
 
 - Implement `run(task_spec, output_dir) -> RunResult`.
 - Write deliverables directly into the provided `output_dir`.
-- Keep LAB result folders under `/Users/houfu/Projects/harvey-labs/results/<run-id>/`.
+- Keep LAB result folders under `results/<run-id>/` inside the LAB checkout.
 - Preserve raw/protocol state in `RunResult.end_state`.
 - Let the runner derive `benchmark_status` after deliverable validation.
 - Write `metrics.json` with LAB fields plus diagnostics.

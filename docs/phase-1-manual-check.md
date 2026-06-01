@@ -8,13 +8,13 @@ After running the dry-run probe, this optional command proves the live scorer
 path:
 
 ```bash
-cd /Users/houfu/Projects/harvey-labs && uv run python -m evaluation.run_eval --run-id manual-probe --task banking-finance/identify-term-sheet-issues --judge-model claude-sonnet-4-6
+cd <harvey-labs> && uv run python -m evaluation.run_eval --run-id manual-probe --task banking-finance/identify-term-sheet-issues --judge-model claude-sonnet-4-6
 ```
 
 Expected artifacts:
 
-- `/Users/houfu/Projects/harvey-labs/results/manual-probe/scores.json`
-- `/Users/houfu/Projects/harvey-labs/results/manual-probe/report.html`
+- `<harvey-labs>/results/manual-probe/scores.json`
+- `<harvey-labs>/results/manual-probe/report.html`
 
 Expected caveat: the dummy deliverable is not meant to pass the legal rubric.
 For `.docx` deliverables, `scripts/lab_probe.py` writes a minimal valid DOCX

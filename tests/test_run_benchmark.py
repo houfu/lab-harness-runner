@@ -23,12 +23,16 @@ def _args(
     *,
     lab_path: Path,
     run_id: str = "run-123",
+    task: str = "area/task",
     score: bool = False,
     report: bool = False,
     compare: str | None = None,
 ) -> argparse.Namespace:
     return argparse.Namespace(
-        task="area/task",
+        task=task,
+        tasks=None,
+        seeds=None,
+        batch_id=None,
         adapter="nanoclaw",
         run_id=run_id,
         lab_path=str(lab_path),
@@ -275,3 +279,108 @@ def test_parser_rejects_compare_without_score():
                 "task",
             ]
         )
+
+
+def test_parser_accepts_repeated_task_tasks_file_seeds_and_batch_id(tmp_path):
+    import scripts.run_benchmark as run_benchmark
+
+    tasks_file = tmp_path / "tasks.txt"
+    tasks_file.write_text("area/task-c\n", encoding="utf-8")
+    parser = run_benchmark.build_parser()
+
+    args = parser.parse_args(
+        [
+            "--task",
+            "area/task-a",
+            "--task",
+            "area/task-b",
+            "--tasks",
+            str(tasks_file),
+            "--seeds",
+            "1,2",
+            "--batch-id",
+            "batch-123",
+            "--adapter",
+            "nanoclaw",
+            "--nanoclaw-dir",
+            "/tmp/nanoclaw",
+            "--group-id",
+            "lab-runner",
+        ]
+    )
+
+    assert args.task == ["area/task-a", "area/task-b"]
+    assert args.tasks == str(tasks_file)
+    assert args.seeds == "1,2"
+    assert args.batch_id == "batch-123"
+
+
+def test_batch_execution_runs_each_task_seed_and_writes_metadata_summary(
+    tmp_path, monkeypatch
+):
+    import scripts.run_benchmark as run_benchmark
+
+    calls = []
+
+    def fake_single(args):
+        calls.append((args.task, args.seed, args.run_id))
+        run_dir = tmp_path / "results" / args.run_id
+        return {
+            "run_id": args.run_id,
+            "task_id": args.task,
+            "adapter": args.adapter,
+            "run_dir": str(run_dir),
+            "output_dir": str(run_dir / "output"),
+            "metrics_path": str(run_dir / "metrics.json"),
+            "scores_path": str(run_dir / "scores.json"),
+            "report_path": str(run_dir / "report.html"),
+            "benchmark_status": "clean",
+            "raw_end_state": "clean",
+            "terminal_status_seen": True,
+            "expected_deliverables_present": True,
+            "missing_deliverables": [],
+            "score": 1.0,
+            "all_pass": True,
+            "wall_clock_seconds": 1.0,
+            "input_tokens": 10,
+            "output_tokens": 20,
+            "documents_read": 1,
+            "total_vdr_files": 2,
+        }
+
+    monkeypatch.setattr(run_benchmark, "run_single_benchmark", fake_single)
+    args = _args(lab_path=tmp_path, run_id=None)
+    args.task = ["area/task-a", "area/task-b"]
+    args.seeds = "1,2"
+    args.batch_id = "batch-123"
+
+    summary = run_benchmark.run_batch_benchmark(args)
+
+    assert [(task, seed) for task, seed, _ in calls] == [
+        ("area/task-a", "1"),
+        ("area/task-a", "2"),
+        ("area/task-b", "1"),
+        ("area/task-b", "2"),
+    ]
+    assert len({run_id for _, _, run_id in calls}) == 4
+    assert summary["batch_id"] == "batch-123"
+    assert summary["summary_path"] == str(
+        tmp_path / "results" / "batches" / "batch-123" / "summary.json"
+    )
+    assert all(row["seed"] in {"1", "2"} for row in summary["rows"])
+    assert all(row["batch_id"] == "batch-123" for row in summary["rows"])
+    assert not (
+        tmp_path / "results" / "batches" / "batch-123" / "scores.json"
+    ).exists()
+
+
+def test_batch_execution_rejects_fixed_run_id_for_multiple_runs(tmp_path):
+    import scripts.run_benchmark as run_benchmark
+
+    args = _args(lab_path=tmp_path, run_id="fixed-run")
+    args.task = ["area/task-a", "area/task-b"]
+    args.seeds = "1"
+    args.batch_id = "batch-123"
+
+    with pytest.raises(ValueError, match="fixed --run-id"):
+        run_benchmark.run_batch_benchmark(args)

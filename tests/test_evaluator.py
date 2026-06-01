@@ -283,7 +283,9 @@ def test_compare_run_task_invokes_lab_compare_and_returns_artifact_paths(tmp_pat
         capture_output=True,
         text=True,
     )
-    assert paths == [tmp_path / "results" / "comparisons" / "area" / "task" / "comparison.html"]
+    assert paths == [
+        tmp_path / "results" / "comparisons" / "area" / "task" / "comparison.html"
+    ]
 
 
 def test_compare_run_area_invokes_lab_compare_for_task_area(tmp_path):
@@ -307,7 +309,9 @@ def test_compare_run_all_invokes_lab_compare_global(tmp_path):
 
     cmd = mock_run.call_args.args[0]
     assert cmd[-1] == "--all"
-    assert paths == [tmp_path / "results" / "comparisons" / "_global" / "comparison.html"]
+    assert paths == [
+        tmp_path / "results" / "comparisons" / "_global" / "comparison.html"
+    ]
 
 
 def test_compare_run_validates_inputs_before_subprocess(tmp_path):

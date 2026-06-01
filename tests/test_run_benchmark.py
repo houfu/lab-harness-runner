@@ -69,7 +69,9 @@ def test_single_run_orchestrates_adapter_status_and_metrics(tmp_path, monkeypatc
 
     monkeypatch.setattr(run_benchmark, "read_task", read_task)
     monkeypatch.setattr(run_benchmark, "build_result_dir", build_result_dir)
-    monkeypatch.setattr(run_benchmark, "NanoclawAdapter", MagicMock(return_value=adapter))
+    monkeypatch.setattr(
+        run_benchmark, "NanoclawAdapter", MagicMock(return_value=adapter)
+    )
     monkeypatch.setattr(run_benchmark, "derive_benchmark_status", derive_status)
     monkeypatch.setattr(run_benchmark, "write_metrics", write_metrics)
 
@@ -108,11 +110,15 @@ def test_score_and_report_preserve_lab_run_paths(tmp_path, monkeypatch):
         run_id="run-123", end_state="clean", wall_clock_seconds=1.0
     )
 
-    monkeypatch.setattr(run_benchmark, "read_task", MagicMock(return_value=_task_spec()))
+    monkeypatch.setattr(
+        run_benchmark, "read_task", MagicMock(return_value=_task_spec())
+    )
     monkeypatch.setattr(
         run_benchmark, "build_result_dir", MagicMock(return_value=(run_dir, output_dir))
     )
-    monkeypatch.setattr(run_benchmark, "NanoclawAdapter", MagicMock(return_value=adapter))
+    monkeypatch.setattr(
+        run_benchmark, "NanoclawAdapter", MagicMock(return_value=adapter)
+    )
     monkeypatch.setattr(
         run_benchmark,
         "derive_benchmark_status",
@@ -156,11 +162,15 @@ def test_score_and_compare_records_dashboard_paths(tmp_path, monkeypatch, mode):
         tmp_path / "results" / "comparisons" / "area" / "task" / "comparison.html"
     ]
 
-    monkeypatch.setattr(run_benchmark, "read_task", MagicMock(return_value=_task_spec()))
+    monkeypatch.setattr(
+        run_benchmark, "read_task", MagicMock(return_value=_task_spec())
+    )
     monkeypatch.setattr(
         run_benchmark, "build_result_dir", MagicMock(return_value=(run_dir, output_dir))
     )
-    monkeypatch.setattr(run_benchmark, "NanoclawAdapter", MagicMock(return_value=adapter))
+    monkeypatch.setattr(
+        run_benchmark, "NanoclawAdapter", MagicMock(return_value=adapter)
+    )
     monkeypatch.setattr(
         run_benchmark,
         "derive_benchmark_status",
@@ -191,7 +201,9 @@ def test_score_and_compare_records_dashboard_paths(tmp_path, monkeypatch, mode):
     assert summary["scores_path"] == str(run_dir / "scores.json")
 
 
-def test_compare_without_score_rejected_before_adapter_invocation(tmp_path, monkeypatch):
+def test_compare_without_score_rejected_before_adapter_invocation(
+    tmp_path, monkeypatch
+):
     import scripts.run_benchmark as run_benchmark
 
     adapter_factory = MagicMock()

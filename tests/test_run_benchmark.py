@@ -369,9 +369,7 @@ def test_batch_execution_runs_each_task_seed_and_writes_metadata_summary(
     )
     assert all(row["seed"] in {"1", "2"} for row in summary["rows"])
     assert all(row["batch_id"] == "batch-123" for row in summary["rows"])
-    assert not (
-        tmp_path / "results" / "batches" / "batch-123" / "scores.json"
-    ).exists()
+    assert not (tmp_path / "results" / "batches" / "batch-123" / "scores.json").exists()
 
 
 def test_batch_execution_rejects_fixed_run_id_for_multiple_runs(tmp_path):

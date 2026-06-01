@@ -6,6 +6,11 @@ from lab_harness_runner.result_builder import build_result_dir
 from lab_harness_runner.metrics import write_metrics
 from lab_harness_runner.evaluator import compare_run, report_path_for_run, score_run
 from lab_harness_runner.status import derive_benchmark_status
+from lab_harness_runner.aggregation import (
+    build_summary,
+    summarize_variance,
+    write_batch_summary,
+)
 
 __all__ = [
     "Adapter",
@@ -18,4 +23,7 @@ __all__ = [
     "report_path_for_run",
     "compare_run",
     "derive_benchmark_status",
+    "summarize_variance",
+    "build_summary",
+    "write_batch_summary",
 ]

@@ -7,7 +7,12 @@ report, and compare semantics stay in one implementation.
 
 from __future__ import annotations
 
-from scripts.run_benchmark import build_parser, run_single_benchmark
+from scripts.run_benchmark import (
+    _should_run_batch,
+    build_parser,
+    run_batch_benchmark,
+    run_single_benchmark,
+)
 
 
 def main() -> int:
@@ -15,9 +20,19 @@ def main() -> int:
     parser.description = __doc__
     parser.set_defaults(adapter="nanoclaw")
     args = parser.parse_args()
-    summary = run_single_benchmark(args)
+    try:
+        summary = (
+            run_batch_benchmark(args)
+            if _should_run_batch(args)
+            else run_single_benchmark(args)
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
 
     for key in (
+        "batch_id",
+        "row_count",
+        "summary_path",
         "run_id",
         "run_dir",
         "output_dir",

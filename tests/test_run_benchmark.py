@@ -382,3 +382,35 @@ def test_batch_execution_rejects_fixed_run_id_for_multiple_runs(tmp_path):
 
     with pytest.raises(ValueError, match="fixed --run-id"):
         run_benchmark.run_batch_benchmark(args)
+
+
+def test_nanoclaw_compatibility_wrapper_dispatches_batch(monkeypatch, capsys, tmp_path):
+    import scripts.nanoclaw_run as nanoclaw_run
+
+    args = _args(lab_path=tmp_path, run_id=None)
+    args.task = ["area/task-a", "area/task-b"]
+    args.batch_id = "batch-123"
+    parser = MagicMock()
+    parser.parse_args.return_value = args
+    batch = MagicMock(
+        return_value={
+            "batch_id": "batch-123",
+            "row_count": 2,
+            "summary_path": str(
+                tmp_path / "results" / "batches" / "batch-123" / "summary.json"
+            ),
+        }
+    )
+    single = MagicMock()
+
+    monkeypatch.setattr(nanoclaw_run, "build_parser", MagicMock(return_value=parser))
+    monkeypatch.setattr(nanoclaw_run, "run_batch_benchmark", batch)
+    monkeypatch.setattr(nanoclaw_run, "run_single_benchmark", single)
+
+    assert nanoclaw_run.main() == 0
+
+    batch.assert_called_once_with(args)
+    single.assert_not_called()
+    output = capsys.readouterr().out
+    assert "batch_id: batch-123" in output
+    assert "summary_path:" in output

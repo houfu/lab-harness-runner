@@ -101,7 +101,7 @@ Plans:
 
 ## Phase 4: Completion, Metrics, Evaluation, And Scale-Out
 
-Status: in progress
+Status: complete (2026-06-01)
 
 Goal: Make runs reliable enough for benchmark use and honest reporting.
 
@@ -119,7 +119,7 @@ Exit Criteria:
 - A run records clean/error/timeout status, writes metrics, invokes LAB scoring,
   and supports repeated runs with variance reporting.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -136,4 +136,4 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 04-04-PLAN.md — Practical adapter guide and second-adapter compatibility check
+- [x] 04-04-PLAN.md — Practical adapter guide and second-adapter compatibility check

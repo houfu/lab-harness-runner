@@ -118,3 +118,22 @@ Exit Criteria:
 
 - A run records clean/error/timeout status, writes metrics, invokes LAB scoring,
   and supports repeated runs with variance reporting.
+
+**Plans:** 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Benchmark status semantics and metrics diagnostics
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md — Primary LAB-compatible benchmark command and report preservation
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md — Multi-task multi-seed aggregation and variance reporting
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 04-04-PLAN.md — Practical adapter guide and second-adapter compatibility check

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-01T16:17:14.326Z"
+last_updated: "2026-06-01T16:24:19.012Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 13
-  completed_plans: 11
-  percent: 75
+  completed_plans: 12
+  percent: 92
 ---
 
 # State
@@ -18,7 +18,7 @@ Updated: 2026-06-01
 
 ## Current Mode
 
-Phase 4 in progress. Plans 04-01 and 04-02 are complete; ready for Plan 04-03.
+Phase 4 in progress. Plans 04-01, 04-02, and 04-03 are complete; ready for Plan 04-04.
 
 ## Source Documents
 
@@ -26,11 +26,11 @@ Phase 4 in progress. Plans 04-01 and 04-02 are complete; ready for Plan 04-03.
 
 ## Current Phase
 
-Phase 4: Completion, Metrics, Evaluation, And Scale-Out — in progress. Plans 01 and 02 are complete.
+Phase 4: Completion, Metrics, Evaluation, And Scale-Out — in progress. Plans 01, 02, and 03 are complete.
 
 ## Next Action
 
-Execute 04-03-PLAN.md: Multi-task multi-seed aggregation and variance reporting.
+Execute 04-04-PLAN.md: Practical adapter guide and second-adapter compatibility check.
 
 ## Decisions
 
@@ -44,6 +44,8 @@ Execute 04-03-PLAN.md: Multi-task multi-seed aggregation and variance reporting.
 - [Phase 04]: Metrics diagnostics merge after LAB-compatible keys and omit JSON null values.
 - [Phase 04]: run_benchmark.py is the primary nanoclaw benchmark CLI; nanoclaw_run.py delegates to it for compatibility.
 - [Phase 04]: LAB compare/dashboard generation is score-dependent and preserves dashboard artifacts at LAB-created comparison paths.
+- [Phase 04]: Batch summaries are metadata-only at results/batches/<batch-id>/summary.json and never create aggregate scores.json.
+- [Phase 04]: Batch seeds are recorded as metadata only unless an adapter later implements deterministic seeding.
 
 ## Notes
 
@@ -62,6 +64,10 @@ Execute 04-03-PLAN.md: Multi-task multi-seed aggregation and variance reporting.
   repo, NanoclawAdapter.run() wired (mounts + dispatch + poll + result), nanoclaw_run.py CLI,
   subprocess-mock dispatch test. 53 tests pass. Duration: ~480 seconds.
 
+- Phase 4 Plan 03 completed on 2026-06-01: task x seed batch expansion, metadata-only
+  aggregation under LAB results/batches, and variance fields across score/timing/token/document
+  metrics. 86 tests pass. Duration: 5 minutes.
+
 ## Session Log
 
 - 2026-05-31T00:32:39Z: Completed 03-01-PLAN.md (NanoclawAdapter core logic and tests)
@@ -71,3 +77,4 @@ Execute 04-03-PLAN.md: Multi-task multi-seed aggregation and variance reporting.
 - 2026-06-01T02:53:47Z: User approved run `69f75ee0-84e2-44ca-a906-0bca7da7baae` as sufficient for Phase 3 despite `end_state: "timeout"` because the expected `discrepancy-analysis-memo.docx` exists and contains generated analysis. Created 03-03-SUMMARY.md and marked Phase 3 complete.
 - 2026-06-01T16:09:10Z: Completed 04-01-PLAN.md (benchmark-facing status derivation and enriched metrics diagnostics). 62 tests pass.
 - 2026-06-01T16:16:14Z: Completed 04-02-PLAN.md (primary benchmark command, report preservation, and optional LAB compare/dashboard paths). 78 tests pass.
+- 2026-06-01T16:22:59Z: Completed 04-03-PLAN.md (multi-task/multi-seed aggregation and variance reporting). 86 tests pass; no aggregate scores.json under LAB results/batches.

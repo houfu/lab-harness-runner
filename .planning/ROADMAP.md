@@ -101,7 +101,7 @@ Plans:
 
 ## Phase 4: Completion, Metrics, Evaluation, And Scale-Out
 
-Status: planned
+Status: in progress
 
 Goal: Make runs reliable enough for benchmark use and honest reporting.
 
@@ -119,7 +119,7 @@ Exit Criteria:
 - A run records clean/error/timeout status, writes metrics, invokes LAB scoring,
   and supports repeated runs with variance reporting.
 
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 **Wave 1**
@@ -132,7 +132,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-03-PLAN.md — Multi-task multi-seed aggregation and variance reporting
+- [x] 04-03-PLAN.md — Multi-task multi-seed aggregation and variance reporting
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

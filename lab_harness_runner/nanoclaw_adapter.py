@@ -138,7 +138,28 @@ class NanoclawAdapter:
                 output=exc.output,
                 stderr=exc.stderr,
             ) from exc
-        return json.loads(result.stdout.strip())
+        # The nanoclaw container runtime (OneCLI SDK / docker spawn invoked by
+        # wakeContainer) can emit unstructured lines on stdout. The shim's JSON
+        # result is one line among that noise, so scan for the line that parses
+        # as our result object instead of assuming stdout is JSON-only.
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line.startswith("{"):
+                continue
+            try:
+                parsed = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if (
+                isinstance(parsed, dict)
+                and "sessionId" in parsed
+                and "outboundDbPath" in parsed
+            ):
+                return parsed
+        raise ValueError(
+            "nanoclaw shim produced no parseable JSON result line on stdout; "
+            f"stdout was:\n{result.stdout}"
+        )
 
     def _poll_for_status(
         self,

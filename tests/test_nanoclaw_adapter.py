@@ -177,9 +177,14 @@ def test_dispatch_calls_shim_and_returns_clean(
         run_id="run-dispatch-test",
     )
 
-    # Shim stdout: JSON line with sessionId + outboundDbPath pointing at fixture
-    shim_stdout = json.dumps(
-        {"sessionId": "sess-test-001", "outboundDbPath": str(outbound_db)}
+    # Shim stdout can include runtime noise before the JSON line.
+    shim_stdout = "\n".join(
+        [
+            "wakeContainer: container already running",
+            json.dumps(
+                {"sessionId": "sess-test-001", "outboundDbPath": str(outbound_db)}
+            ),
+        ]
     )
 
     adapter = NanoclawAdapter(

@@ -1,37 +1,40 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: milestone_complete
-last_updated: 2026-06-01T23:01:30.249Z
+milestone_name: MVP
+status: Awaiting next milestone
+last_updated: "2026-06-02T00:08:15.776Z"
+last_activity: 2026-06-02 — Milestone v1.0 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 13
   completed_plans: 13
   percent: 100
-stopped_at: Milestone complete (Phase 04 was final phase)
 ---
 
 # State
 
-Updated: 2026-06-01
+Updated: 2026-06-02
 
 ## Current Mode
 
-Phase 4 complete. Plans 04-01 through 04-04 are complete.
+Milestone v1.0 MVP shipped and archived. Awaiting next milestone.
+
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-06-02)
+
+**Core value:** Run Harvey LAB tasks through external agent harnesses (starting with nanoclaw-lq) and score them with LAB's own evaluator, without modifying LAB.
+**Current focus:** Planning next milestone.
 
 ## Source Documents
 
 - `lab-nanoclaw-plan.md` classified as DOC.
 
-## Current Phase
-
-Phase 4: Completion, Metrics, Evaluation, And Scale-Out — complete. Plans 01 through 04 are complete.
-
 ## Next Action
 
-Run milestone verification/UAT or prepare shipment for the completed Phase 4 milestone.
+Start the next milestone with `/gsd:new-milestone` (questioning → research → requirements → roadmap).
 
 ## Decisions
 
@@ -86,3 +89,14 @@ Run milestone verification/UAT or prepare shipment for the completed Phase 4 mil
 - 2026-06-01T16:16:14Z: Completed 04-02-PLAN.md (primary benchmark command, report preservation, and optional LAB compare/dashboard paths). 78 tests pass.
 - 2026-06-01T16:22:59Z: Completed 04-03-PLAN.md (multi-task/multi-seed aggregation and variance reporting). 86 tests pass; no aggregate scores.json under LAB results/batches.
 - 2026-06-01T16:28:46Z: Completed 04-04-PLAN.md (practical adapter guide and second-adapter compatibility check). 89 tests pass; no second adapter production file added.
+
+## Current Position
+
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-02 — Milestone v1.0 completed and archived
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

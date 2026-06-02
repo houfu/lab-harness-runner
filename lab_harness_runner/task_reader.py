@@ -66,7 +66,7 @@ def read_task(lab_path: Path, task_id: str, run_id: str) -> TaskSpec:
 
     # Extract unique deliverable filenames from criteria[].deliverables only.
     # The top-level "deliverables" key is a dict used by the evaluator differently
-    # and must NOT be used here (verified-contracts.md, scoring.py lines 315-321).
+    # and must NOT be used here.
     names: set[str] = set()
     for criterion in config.get("criteria", []):
         for deliverable in criterion.get("deliverables", []):

@@ -7,8 +7,6 @@ GUIDE_PATH = Path("docs/adapter-guide.md")
 PUBLIC_DOC_PATHS = [
     Path("README.md"),
     Path("docs/adapter-guide.md"),
-    Path("docs/verified-contracts.md"),
-    Path("docs/phase-1-manual-check.md"),
 ]
 
 

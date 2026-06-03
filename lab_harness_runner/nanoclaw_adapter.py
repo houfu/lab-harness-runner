@@ -350,17 +350,29 @@ class EphemeralNanoclawAdapter:
         poll_interval: float = 5.0,
         keep_failed: bool = False,
         name_prefix: str = "lab-eph",
+        model: str | None = None,
     ) -> None:
         self.nanoclaw_dir = nanoclaw_dir.expanduser().resolve()
         self.timeout_seconds = timeout_seconds
         self.poll_interval = poll_interval
         self.keep_failed = keep_failed
         self.name_prefix = name_prefix
+        # None -> the group keeps nanoclaw's default model (model-neutral). A
+        # non-claude model is routed to the host Ollama by the create shim.
+        self.model = model
 
     def _create_group(self, name: str) -> str:
-        """Create a fresh group via the shim and return its agent group id."""
+        """Create a fresh group via the shim and return its agent group id.
+
+        Passes --model only when a model is configured, so the committed default
+        is model-neutral; the operator selects a model (e.g. an Ollama-routed
+        one) per run or via env.
+        """
+        cmd = ["pnpm", "exec", "tsx", "scripts/create-lab-group.ts", "--name", name]
+        if self.model:
+            cmd += ["--model", self.model]
         result = subprocess.run(
-            ["pnpm", "exec", "tsx", "scripts/create-lab-group.ts", "--name", name],
+            cmd,
             cwd=self.nanoclaw_dir,
             check=True,
             capture_output=True,

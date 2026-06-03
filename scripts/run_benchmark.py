@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import uuid
 from pathlib import Path
 from typing import Any
@@ -94,6 +95,16 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "in ephemeral mode, retain the group of a failed run for debugging "
             "instead of destroying it (successful runs are always destroyed)"
+        ),
+    )
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("LAB_AGENT_MODEL"),
+        help=(
+            "agent model for ephemeral groups. Default: unset (nanoclaw's default "
+            "model), or the LAB_AGENT_MODEL env var if set. A non-claude model "
+            "(e.g. deepseek-v4-flash:cloud) is routed to the host Ollama; a "
+            "claude-* model uses the real Anthropic API. Ignored with --group-id"
         ),
     )
     parser.add_argument(
@@ -298,6 +309,7 @@ def _adapter_from_args(
         nanoclaw_dir=Path(args.nanoclaw_dir),
         timeout_seconds=args.timeout,
         keep_failed=args.keep_failed,
+        model=args.model,
     )
 
 

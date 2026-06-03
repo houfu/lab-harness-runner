@@ -318,12 +318,20 @@ def test_create_group_parses_noisy_stdout(tmp_path: Path) -> None:
     """_create_group scans past INFO log noise for the JSON result line."""
     from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
 
-    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path)
+    adapter = EphemeralNanoclawAdapter(
+        nanoclaw_dir=tmp_path, model="custom-model:cloud"
+    )
     noisy = "\n".join(
         [
             "[12:00:00.000] INFO Central DB initialized",
             "[12:00:00.001] INFO Initialized group filesystem",
-            json.dumps({"groupId": "ag-123-abc", "folder": "lab-eph-xyz"}),
+            json.dumps(
+                {
+                    "groupId": "ag-123-abc",
+                    "folder": "lab-eph-xyz",
+                    "model": "custom-model:cloud",
+                }
+            ),
         ]
     )
     with patch("lab_harness_runner.nanoclaw_adapter.subprocess.run") as mock_run:
@@ -333,6 +341,27 @@ def test_create_group_parses_noisy_stdout(tmp_path: Path) -> None:
     assert group_id == "ag-123-abc"
     cmd = mock_run.call_args[0][0]
     assert any("create-lab-group.ts" in arg for arg in cmd)
+    # The chosen model is forwarded to the create shim.
+    assert "--model" in cmd
+    assert "custom-model:cloud" in cmd
+
+
+def test_ephemeral_model_neutral_by_default(tmp_path: Path) -> None:
+    """No model arg -> model is None and --model is NOT passed to the create shim."""
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path)
+    assert adapter.model is None
+
+    result_line = json.dumps({"groupId": "ag-x", "folder": "f", "model": None})
+    with patch("lab_harness_runner.nanoclaw_adapter.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=result_line + "\n", stderr=""
+        )
+        adapter._create_group("lab-eph-x")
+
+    cmd = mock_run.call_args[0][0]
+    assert "--model" not in cmd
 
 
 def test_ephemeral_creates_and_destroys_on_success(tmp_path: Path) -> None:

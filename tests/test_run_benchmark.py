@@ -43,6 +43,8 @@ def _args(
         report=report,
         compare=compare,
         judge_model="judge-model",
+        keep_failed=False,
+        model=None,
     )
 
 
@@ -435,7 +437,9 @@ def test_adapter_from_args_no_group_returns_ephemeral(tmp_path):
     args = _args(lab_path=tmp_path)
     args.group_id = None
     args.keep_failed = True
+    args.model = "some-model:cloud"
     adapter = run_benchmark._adapter_from_args(args)
     assert isinstance(adapter, EphemeralNanoclawAdapter)
     assert adapter.keep_failed is True
     assert adapter.timeout_seconds == args.timeout
+    assert adapter.model == "some-model:cloud"

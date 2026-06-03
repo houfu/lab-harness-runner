@@ -33,6 +33,11 @@ LAB_PATH="${LAB_PATH:-$HOME/Projects/harvey-labs}"
 NANOCLAW_DIR="${NANOCLAW_DIR:-$HOME/Projects/nanoclaw-lq}"
 MODEL="${MODEL:-deepseek-v4-flash:cloud}"
 PARALLEL="${PARALLEL:-4}"
+# Per-task poll timeout (seconds). The poll short-circuits as soon as
+# deliverables land and are size-stable, so this only caps the wait on tasks
+# that produce NO deliverable -- lowering it stops those failures from
+# stalling a worker for the full default 600s.
+TIMEOUT="${TIMEOUT:-600}"
 TASK_LIST="${TASK_LIST:-/tmp/harvey-lab-sweep.txt}"
 LOG_DIR="${LOG_DIR:-/tmp/harvey-lab-logs}"
 
@@ -70,6 +75,7 @@ run_one() {
       --adapter nanoclaw \
       --nanoclaw-dir "$NANOCLAW_DIR" \
       --model "$MODEL" \
+      --timeout "$TIMEOUT" \
   ) >> "$LOG_DIR/$run_id.log" 2>&1
   # Never propagate non-zero: a single failure returning 255 makes xargs abort
   # the entire sweep. Failures are recovered by re-running (skip-on-clean).
@@ -87,7 +93,7 @@ inventory() {
 }
 
 export -f run_one is_clean
-export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR PY
+export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR PY TIMEOUT
 
 main() {
   mkdir -p "$LOG_DIR"

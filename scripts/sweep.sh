@@ -38,6 +38,12 @@ LOG_DIR="${LOG_DIR:-/tmp/harvey-lab-logs}"
 
 RESULTS="$LAB_PATH/results"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Call the venv interpreter directly instead of `uv run`: the latter
+# re-validates the env and opens uv cache files on every single invocation,
+# which under parallel load exhausted the system-wide FD table (ENFILE) and
+# crashed an earlier sweep ~193 tasks in. Fall back to `uv run` if absent.
+PY="$HERE/.venv/bin/python"
+[ -x "$PY" ] || PY="uv run python"
 
 build_task_list() {
   find "$LAB_PATH/tasks" -name task.json \
@@ -58,13 +64,16 @@ run_one() {
     return 0
   fi
   echo "run   $task"
-  ( cd "$HERE" && uv run python scripts/run_benchmark.py \
+  ( cd "$HERE" && $PY scripts/run_benchmark.py \
       --task "$task" \
       --run-id "$run_id" \
       --adapter nanoclaw \
       --nanoclaw-dir "$NANOCLAW_DIR" \
       --model "$MODEL" \
   ) >> "$LOG_DIR/$run_id.log" 2>&1
+  # Never propagate non-zero: a single failure returning 255 makes xargs abort
+  # the entire sweep. Failures are recovered by re-running (skip-on-clean).
+  return 0
 }
 
 inventory() {
@@ -78,7 +87,7 @@ inventory() {
 }
 
 export -f run_one is_clean
-export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR
+export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR PY
 
 main() {
   mkdir -p "$LOG_DIR"

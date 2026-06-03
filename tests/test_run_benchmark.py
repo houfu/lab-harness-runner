@@ -414,3 +414,28 @@ def test_nanoclaw_compatibility_wrapper_dispatches_batch(monkeypatch, capsys, tm
     output = capsys.readouterr().out
     assert "batch_id: batch-123" in output
     assert "summary_path:" in output
+
+
+def test_adapter_from_args_fixed_group_returns_nanoclaw(tmp_path):
+    import scripts.run_benchmark as run_benchmark
+    from lab_harness_runner.nanoclaw_adapter import NanoclawAdapter
+
+    args = _args(lab_path=tmp_path)
+    args.group_id = "lab-runner"
+    args.keep_failed = False
+    adapter = run_benchmark._adapter_from_args(args)
+    assert isinstance(adapter, NanoclawAdapter)
+    assert adapter.group_id == "lab-runner"
+
+
+def test_adapter_from_args_no_group_returns_ephemeral(tmp_path):
+    import scripts.run_benchmark as run_benchmark
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    args = _args(lab_path=tmp_path)
+    args.group_id = None
+    args.keep_failed = True
+    adapter = run_benchmark._adapter_from_args(args)
+    assert isinstance(adapter, EphemeralNanoclawAdapter)
+    assert adapter.keep_failed is True
+    assert adapter.timeout_seconds == args.timeout

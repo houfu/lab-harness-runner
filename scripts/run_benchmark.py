@@ -20,7 +20,10 @@ from lab_harness_runner import (
     write_batch_summary,
     write_metrics,
 )
-from lab_harness_runner.nanoclaw_adapter import NanoclawAdapter
+from lab_harness_runner.nanoclaw_adapter import (
+    EphemeralNanoclawAdapter,
+    NanoclawAdapter,
+)
 from lab_harness_runner.task_reader import _lab_path, _reject_unsafe_relative_path
 
 
@@ -78,8 +81,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--group-id",
-        required=True,
-        help="nanoclaw agent group ID for LAB runs",
+        default=None,
+        help=(
+            "reuse a fixed nanoclaw agent group ID. Omit for ephemeral mode "
+            "(default): a fresh throwaway group is created per run and destroyed "
+            "afterwards, so runs cannot contaminate each other"
+        ),
+    )
+    parser.add_argument(
+        "--keep-failed",
+        action="store_true",
+        help=(
+            "in ephemeral mode, retain the group of a failed run for debugging "
+            "instead of destroying it (successful runs are always destroyed)"
+        ),
     )
     parser.add_argument(
         "--timeout",
@@ -119,7 +134,8 @@ def _validate_args(args: argparse.Namespace) -> None:
     _reject_unsafe_relative_path(args.task, "--task")
     if args.run_id is not None:
         _reject_unsafe_relative_path(args.run_id, "--run-id")
-    _reject_unsafe_relative_path(args.group_id, "--group-id")
+    if args.group_id is not None:
+        _reject_unsafe_relative_path(args.group_id, "--group-id")
     if args.report and not args.score:
         raise ValueError("--report requires --score")
     if args.compare and not args.score:
@@ -268,11 +284,20 @@ def _should_run_batch(args: argparse.Namespace) -> bool:
     return bool(args.tasks or args.seeds or args.batch_id or task_count > 1)
 
 
-def _adapter_from_args(args: argparse.Namespace) -> NanoclawAdapter:
-    return NanoclawAdapter(
+def _adapter_from_args(
+    args: argparse.Namespace,
+) -> NanoclawAdapter | EphemeralNanoclawAdapter:
+    """Build the adapter: ephemeral per-run group by default, fixed if --group-id."""
+    if args.group_id is not None:
+        return NanoclawAdapter(
+            nanoclaw_dir=Path(args.nanoclaw_dir),
+            group_id=args.group_id,
+            timeout_seconds=args.timeout,
+        )
+    return EphemeralNanoclawAdapter(
         nanoclaw_dir=Path(args.nanoclaw_dir),
-        group_id=args.group_id,
         timeout_seconds=args.timeout,
+        keep_failed=args.keep_failed,
     )
 
 

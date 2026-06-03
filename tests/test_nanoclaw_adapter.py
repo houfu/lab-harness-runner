@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -24,7 +25,7 @@ def test_poll_status_done_returns_clean(outbound_db: Path) -> None:
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
     result = adapter._poll_for_status(
-        outbound_db, timeout_seconds=5.0, poll_interval=0.1
+        outbound_db, outbound_db.parent, [], timeout_seconds=5.0, poll_interval=0.1
     )
     assert result == "clean"
 
@@ -43,7 +44,7 @@ def test_poll_status_error_returns_agent_error(outbound_db: Path) -> None:
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
     result = adapter._poll_for_status(
-        outbound_db, timeout_seconds=5.0, poll_interval=0.1
+        outbound_db, outbound_db.parent, [], timeout_seconds=5.0, poll_interval=0.1
     )
     assert result == "agent_error"
 
@@ -62,7 +63,7 @@ def test_poll_non_done_status_returns_agent_error(outbound_db: Path) -> None:
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
     result = adapter._poll_for_status(
-        outbound_db, timeout_seconds=5.0, poll_interval=0.1
+        outbound_db, outbound_db.parent, [], timeout_seconds=5.0, poll_interval=0.1
     )
     assert result == "agent_error"
 
@@ -73,7 +74,7 @@ def test_poll_timeout_returns_timeout(outbound_db: Path) -> None:
 
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
     result = adapter._poll_for_status(
-        outbound_db, timeout_seconds=0.3, poll_interval=0.1
+        outbound_db, outbound_db.parent, [], timeout_seconds=0.3, poll_interval=0.1
     )
     assert result == "timeout"
 
@@ -85,7 +86,87 @@ def test_poll_missing_db_does_not_raise(tmp_path: Path) -> None:
     missing_path = tmp_path / "nonexistent" / "outbound.db"
     adapter = NanoclawAdapter.__new__(NanoclawAdapter)
     result = adapter._poll_for_status(
-        missing_path, timeout_seconds=0.3, poll_interval=0.1
+        missing_path, tmp_path, [], timeout_seconds=0.3, poll_interval=0.1
+    )
+    assert result == "timeout"
+
+
+def test_poll_deliverables_present_exits_early(
+    outbound_db: Path, tmp_path: Path
+) -> None:
+    """Deliverables present + size-stable, no STATUS: -> 'timeout' returned early.
+
+    Raw end_state is 'timeout' (no terminal signal seen), but the loop exits well
+    before the deadline because the deliverable landed. derive_benchmark_status
+    maps deliverable presence to benchmark_status='clean' downstream.
+    """
+    from lab_harness_runner.nanoclaw_adapter import NanoclawAdapter
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    (output_dir / "report.txt").write_text("deliverable contents")
+
+    adapter = NanoclawAdapter.__new__(NanoclawAdapter)
+    start = time.monotonic()
+    result = adapter._poll_for_status(
+        outbound_db,
+        output_dir,
+        ["report.txt"],
+        timeout_seconds=10.0,
+        poll_interval=0.05,
+    )
+    elapsed = time.monotonic() - start
+
+    assert result == "timeout"
+    assert elapsed < 2.0  # exited early on deliverable presence, not after 10s
+
+
+def test_poll_status_done_wins_over_deliverables(
+    outbound_db: Path, tmp_path: Path
+) -> None:
+    """A terminal STATUS: DONE short-circuits to 'clean' even with deliverables present."""
+    from lab_harness_runner.nanoclaw_adapter import NanoclawAdapter
+
+    conn = sqlite3.connect(str(outbound_db))
+    conn.execute(
+        "INSERT INTO messages_out (content) VALUES (?)",
+        (json.dumps({"text": "STATUS: DONE"}),),
+    )
+    conn.commit()
+    conn.close()
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    (output_dir / "report.txt").write_text("x")
+
+    adapter = NanoclawAdapter.__new__(NanoclawAdapter)
+    result = adapter._poll_for_status(
+        outbound_db,
+        output_dir,
+        ["report.txt"],
+        timeout_seconds=5.0,
+        poll_interval=0.05,
+    )
+    assert result == "clean"
+
+
+def test_poll_empty_deliverable_does_not_latch(
+    outbound_db: Path, tmp_path: Path
+) -> None:
+    """A zero-byte deliverable is not treated as complete -> falls through to timeout."""
+    from lab_harness_runner.nanoclaw_adapter import NanoclawAdapter
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    (output_dir / "report.txt").touch()  # 0 bytes — not yet written
+
+    adapter = NanoclawAdapter.__new__(NanoclawAdapter)
+    result = adapter._poll_for_status(
+        outbound_db,
+        output_dir,
+        ["report.txt"],
+        timeout_seconds=0.3,
+        poll_interval=0.05,
     )
     assert result == "timeout"
 
@@ -212,3 +293,126 @@ def test_dispatch_calls_shim_and_returns_clean(
     # Assert run() returned the correct end state
     assert result.end_state == "clean"
     assert result.run_id == "run-dispatch-test"
+
+
+# ---------------------------------------------------------------------------
+# EphemeralNanoclawAdapter — per-run group create/destroy orchestration
+# ---------------------------------------------------------------------------
+
+
+def _eph_task_spec(tmp_path: Path) -> "object":
+    from lab_harness_runner.adapter import TaskSpec
+
+    docs = tmp_path / "documents"
+    docs.mkdir(exist_ok=True)
+    return TaskSpec(
+        task_id="area/eph-task",
+        instructions="Do it.",
+        documents_dir=docs,
+        expected_deliverables=["answer.docx"],
+        run_id="run-eph-1",
+    )
+
+
+def test_create_group_parses_noisy_stdout(tmp_path: Path) -> None:
+    """_create_group scans past INFO log noise for the JSON result line."""
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path)
+    noisy = "\n".join(
+        [
+            "[12:00:00.000] INFO Central DB initialized",
+            "[12:00:00.001] INFO Initialized group filesystem",
+            json.dumps({"groupId": "ag-123-abc", "folder": "lab-eph-xyz"}),
+        ]
+    )
+    with patch("lab_harness_runner.nanoclaw_adapter.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout=noisy + "\n", stderr="")
+        group_id = adapter._create_group("lab-eph-xyz")
+
+    assert group_id == "ag-123-abc"
+    cmd = mock_run.call_args[0][0]
+    assert any("create-lab-group.ts" in arg for arg in cmd)
+
+
+def test_ephemeral_creates_and_destroys_on_success(tmp_path: Path) -> None:
+    """Successful run -> group created once, inner adapter runs, group destroyed."""
+    from lab_harness_runner.adapter import RunResult
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    task_spec = _eph_task_spec(tmp_path)
+    inner_result = RunResult(
+        run_id="run-eph-1", end_state="timeout", wall_clock_seconds=1.0
+    )
+
+    inner = MagicMock()
+    inner.run.return_value = inner_result
+
+    with (
+        patch.object(adapter, "_create_group", return_value="ag-eph-99") as create,
+        patch.object(adapter, "_destroy_group") as destroy,
+        patch(
+            "lab_harness_runner.nanoclaw_adapter.NanoclawAdapter",
+            return_value=inner,
+        ) as ctor,
+    ):
+        result = adapter.run(task_spec=task_spec, output_dir=output_dir)
+
+    create.assert_called_once()
+    # Inner adapter was bound to the freshly created group id.
+    assert ctor.call_args.kwargs["group_id"] == "ag-eph-99"
+    destroy.assert_called_once_with("ag-eph-99")
+    assert result is inner_result
+
+
+def test_ephemeral_destroys_on_failure_by_default(tmp_path: Path) -> None:
+    """Inner run raising -> group still destroyed (keep_failed defaults False)."""
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    task_spec = _eph_task_spec(tmp_path)
+
+    inner = MagicMock()
+    inner.run.side_effect = RuntimeError("dispatch blew up")
+
+    with (
+        patch.object(adapter, "_create_group", return_value="ag-eph-fail"),
+        patch.object(adapter, "_destroy_group") as destroy,
+        patch(
+            "lab_harness_runner.nanoclaw_adapter.NanoclawAdapter", return_value=inner
+        ),
+        pytest.raises(RuntimeError, match="dispatch blew up"),
+    ):
+        adapter.run(task_spec=task_spec, output_dir=output_dir)
+
+    destroy.assert_called_once_with("ag-eph-fail")
+
+
+def test_ephemeral_keeps_failed_group_when_flag_set(tmp_path: Path) -> None:
+    """keep_failed=True -> a failed run's group is retained (not destroyed)."""
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path, keep_failed=True)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    task_spec = _eph_task_spec(tmp_path)
+
+    inner = MagicMock()
+    inner.run.side_effect = RuntimeError("boom")
+
+    with (
+        patch.object(adapter, "_create_group", return_value="ag-keep"),
+        patch.object(adapter, "_destroy_group") as destroy,
+        patch(
+            "lab_harness_runner.nanoclaw_adapter.NanoclawAdapter", return_value=inner
+        ),
+        pytest.raises(RuntimeError, match="boom"),
+    ):
+        adapter.run(task_spec=task_spec, output_dir=output_dir)
+
+    destroy.assert_not_called()

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -161,37 +162,92 @@ class NanoclawAdapter:
             f"stdout was:\n{result.stdout}"
         )
 
+    def _read_terminal_status(self, outbound_db_path: Path) -> str | None:
+        """Return "clean"/"agent_error" if a terminal STATUS: line exists, else None.
+
+        Opens, reads, and closes the DB per call — never holds a connection across
+        a sleep (one-writer invariant for virtiofs cross-mounts). Swallows errors
+        (DB not yet created or locked) and returns None so the caller retries.
+        """
+        try:
+            conn = sqlite3.connect(str(outbound_db_path))
+            rows = conn.execute(
+                "SELECT content FROM messages_out ORDER BY seq"
+            ).fetchall()
+            conn.close()
+        except Exception:
+            return None  # DB not yet created or locked — caller retries
+        for (content_json,) in rows:
+            try:
+                text = json.loads(content_json).get("text", "")
+            except Exception:
+                text = content_json
+            if text.startswith("STATUS:"):
+                status = text[len("STATUS:") :].strip().upper()
+                return "clean" if status == "DONE" else "agent_error"
+        return None
+
+    def _deliverable_sizes(
+        self, output_dir: Path, expected_deliverables: list[str]
+    ) -> dict[str, int] | None:
+        """Return {name: byte_size} for the expected deliverables, or None.
+
+        None means at least one expected deliverable is missing or empty (size 0)
+        — the caller treats that as "not yet complete" and keeps polling. Empty
+        files are excluded to avoid latching onto a just-created, not-yet-written
+        file. Names are validated as safe relative paths (no absolute/.. paths).
+        """
+        sizes: dict[str, int] = {}
+        for name in expected_deliverables:
+            rel = _reject_unsafe_relative_path(name, "expected_deliverable")
+            path = output_dir / rel
+            if not path.exists():
+                return None
+            size = path.stat().st_size
+            if size <= 0:
+                return None
+            sizes[name] = size
+        return sizes
+
     def _poll_for_status(
         self,
         outbound_db_path: Path,
+        output_dir: Path,
+        expected_deliverables: list[str],
         timeout_seconds: float,
         poll_interval: float,
     ) -> str:
-        """Poll outbound.db messages_out for a STATUS: line.
+        """Poll for completion, gated on deliverables — not the agent's self-report.
 
-        Opens, reads, and closes the DB per iteration — never holds a connection
-        across a sleep (one-writer invariant for virtiofs cross-mounts).
+        The loop exits as soon as every expected deliverable is present in
+        output_dir and byte-size-stable across one poll interval (the stability
+        check guards against latching onto a half-written file). A terminal
+        STATUS: line still short-circuits when present, but its absence no longer
+        forces a full-timeout wait.
 
-        Returns one of: "clean", "agent_error", "timeout".
+        Returns one of "clean", "agent_error", "timeout":
+          - "clean"/"agent_error": a terminal STATUS: line was observed.
+          - "timeout": deliverables landed but no STATUS: was seen. This is the
+            honest raw state (no terminal signal); derive_benchmark_status maps
+            deliverable presence to benchmark_status="clean" downstream.
+          - "timeout": deadline passed with no deliverables and no STATUS:.
+
+        Opens/reads/closes the DB per iteration — never holds a connection across a
+        sleep (one-writer invariant for virtiofs cross-mounts).
         """
         deadline = time.monotonic() + timeout_seconds
+        prev_sizes: dict[str, int] | None = None
         while time.monotonic() < deadline:
-            try:
-                conn = sqlite3.connect(str(outbound_db_path))
-                rows = conn.execute(
-                    "SELECT content FROM messages_out ORDER BY seq"
-                ).fetchall()
-                conn.close()
-                for (content_json,) in rows:
-                    try:
-                        text = json.loads(content_json).get("text", "")
-                    except Exception:
-                        text = content_json
-                    if text.startswith("STATUS:"):
-                        status = text[len("STATUS:") :].strip().upper()
-                        return "clean" if status == "DONE" else "agent_error"
-            except Exception:
-                pass  # DB not yet created or locked — retry
+            # Terminal STATUS: short-circuits with the agent's reported outcome.
+            status = self._read_terminal_status(outbound_db_path)
+            if status is not None:
+                return status
+            # Deliverable gate: present and size-stable across two observations.
+            if expected_deliverables:
+                sizes = self._deliverable_sizes(output_dir, expected_deliverables)
+                if sizes is not None and sizes == prev_sizes:
+                    return "timeout"
+                prev_sizes = sizes
             time.sleep(poll_interval)
         return "timeout"
 
@@ -231,9 +287,13 @@ class NanoclawAdapter:
         shim_result = self._dispatch(task_spec)
         outbound_db_path = Path(shim_result["outboundDbPath"])
 
-        # Step 3 — poll for STATUS: signal
+        # Step 3 — poll for completion (deliverables landing, or a STATUS: signal)
         end_state = self._poll_for_status(
-            outbound_db_path, self.timeout_seconds, self.poll_interval
+            outbound_db_path,
+            output_dir,
+            task_spec.expected_deliverables,
+            self.timeout_seconds,
+            self.poll_interval,
         )
 
         # Step 4 — return RunResult
@@ -242,3 +302,119 @@ class NanoclawAdapter:
             end_state=end_state,
             wall_clock_seconds=time.monotonic() - start,
         )
+
+
+def _scan_json_result(stdout: str, *required_keys: str) -> dict:
+    """Return the first stdout line that parses as a dict with all required_keys.
+
+    The nanoclaw shims emit INFO log lines on stdout alongside their single JSON
+    result line, so callers must scan for the result rather than assuming
+    stdout is JSON-only (same pattern as NanoclawAdapter._dispatch).
+    """
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict) and all(k in parsed for k in required_keys):
+            return parsed
+    raise ValueError(
+        "nanoclaw shim produced no parseable JSON result line on stdout; "
+        f"stdout was:\n{stdout}"
+    )
+
+
+class EphemeralNanoclawAdapter:
+    """Adapter that provisions a fresh nanoclaw group per run, then tears it down.
+
+    Each run() creates a throwaway agent group (via the create-lab-group.ts
+    shim), delegates execution to a NanoclawAdapter bound to that group, and
+    destroys the group afterwards (destroy-lab-group.ts). This gives every run a
+    clean session, container filesystem, and memory — no carryover contamination
+    from prior tasks, which a reused group would accumulate (nanoclaw uses one
+    "agent-shared" session per group).
+
+    Teardown policy:
+      - success: always destroy.
+      - failure: destroy unless keep_failed=True, which retains the group and its
+        session dir for debugging (the orphaned group id is reported on stderr).
+    """
+
+    def __init__(
+        self,
+        nanoclaw_dir: Path,
+        timeout_seconds: float = 600.0,
+        poll_interval: float = 5.0,
+        keep_failed: bool = False,
+        name_prefix: str = "lab-eph",
+    ) -> None:
+        self.nanoclaw_dir = nanoclaw_dir.expanduser().resolve()
+        self.timeout_seconds = timeout_seconds
+        self.poll_interval = poll_interval
+        self.keep_failed = keep_failed
+        self.name_prefix = name_prefix
+
+    def _create_group(self, name: str) -> str:
+        """Create a fresh group via the shim and return its agent group id."""
+        result = subprocess.run(
+            ["pnpm", "exec", "tsx", "scripts/create-lab-group.ts", "--name", name],
+            cwd=self.nanoclaw_dir,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        parsed = _scan_json_result(result.stdout, "groupId")
+        return str(parsed["groupId"])
+
+    def _destroy_group(self, group_id: str) -> None:
+        """Destroy a group via the shim. Raises CalledProcessError on shim failure."""
+        subprocess.run(
+            [
+                "pnpm",
+                "exec",
+                "tsx",
+                "scripts/destroy-lab-group.ts",
+                "--group-id",
+                group_id,
+            ],
+            cwd=self.nanoclaw_dir,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    def run(self, task_spec: TaskSpec, output_dir: Path) -> RunResult:
+        """Provision a fresh group, run the task on it, then tear it down."""
+        name = f"{self.name_prefix}-{uuid.uuid4().hex[:8]}"
+        group_id = self._create_group(name)
+
+        failed = False
+        try:
+            adapter = NanoclawAdapter(
+                nanoclaw_dir=self.nanoclaw_dir,
+                group_id=group_id,
+                timeout_seconds=self.timeout_seconds,
+                poll_interval=self.poll_interval,
+            )
+            return adapter.run(task_spec=task_spec, output_dir=output_dir)
+        except Exception:
+            failed = True
+            raise
+        finally:
+            if failed and self.keep_failed:
+                print(
+                    f"[ephemeral] keeping failed group for debugging: {group_id}",
+                    file=sys.stderr,
+                )
+            else:
+                try:
+                    self._destroy_group(group_id)
+                except Exception as exc:  # don't mask a run error; surface orphan
+                    print(
+                        f"[ephemeral] WARNING: failed to destroy group {group_id}; "
+                        f"manual cleanup may be needed: {exc}",
+                        file=sys.stderr,
+                    )

@@ -425,8 +425,12 @@ class EphemeralNanoclawAdapter:
                 try:
                     self._destroy_group(group_id)
                 except Exception as exc:  # don't mask a run error; surface orphan
+                    # Include the shim's stderr — the exit code alone is not
+                    # actionable for diagnosing teardown failures under load.
+                    shim_stderr = getattr(exc, "stderr", None)
+                    detail = f": {shim_stderr.strip()}" if shim_stderr else ""
                     print(
                         f"[ephemeral] WARNING: failed to destroy group {group_id}; "
-                        f"manual cleanup may be needed: {exc}",
+                        f"manual cleanup may be needed: {exc}{detail}",
                         file=sys.stderr,
                     )

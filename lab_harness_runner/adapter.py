@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol
 
@@ -22,7 +22,9 @@ class TaskSpec:
 class RunResult:
     """Outcome reported by an adapter after executing a task.
 
-    end_state must be one of: "clean", "agent_error", "timeout"
+    end_state must be one of: "clean", "agent_error", "timeout".
+    None on a metric field means the adapter did not measure it (distinct
+    from a measured value of 0 or []).
     """
 
     run_id: str
@@ -34,8 +36,8 @@ class RunResult:
     documents_read: int | None = None
     total_vdr_files: int | None = None
     documents_skipped: int | None = None
-    documents_read_list: list[str] = field(default_factory=list)
-    documents_skipped_list: list[str] = field(default_factory=list)
+    documents_read_list: list[str] | None = None
+    documents_skipped_list: list[str] | None = None
 
     def __post_init__(self) -> None:
         if self.end_state not in _VALID_END_STATES:

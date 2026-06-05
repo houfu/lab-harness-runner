@@ -55,5 +55,7 @@ def test_fake_run_wires_task_adapter_result_dir_and_metrics(tmp_path: Path) -> N
 
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert metrics["end_state"] == "clean"
-    assert metrics["input_tokens"] == 0
-    assert metrics["output_tokens"] == 0
+    # FakeAdapter does not measure token usage, so the contract is honest:
+    # unmeasured fields are serialised as JSON null, distinct from 0.
+    assert metrics["input_tokens"] is None
+    assert metrics["output_tokens"] is None

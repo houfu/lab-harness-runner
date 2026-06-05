@@ -25,34 +25,22 @@ def write_metrics(
     result: RunResult,
     extra_fields: dict[str, object] | None = None,
 ) -> Path:
-    """Write metrics.json to run_dir. Always succeeds with safe defaults.
+    """Write metrics.json to run_dir.
 
     Returns the path to the written metrics.json file.
-    None fields use safe defaults: int fields -> 0, list fields -> [].
+    None metric fields are written as JSON null so downstream consumers
+    can distinguish "adapter did not measure" from a measured 0 / [].
+    Diagnostics passed via extra_fields still strip None values.
     """
     metrics = {
-        "input_tokens": (result.input_tokens if result.input_tokens is not None else 0),
-        "output_tokens": (
-            result.output_tokens if result.output_tokens is not None else 0
-        ),
+        "input_tokens": result.input_tokens,
+        "output_tokens": result.output_tokens,
         "wall_clock_seconds": result.wall_clock_seconds,
-        "documents_read": (
-            result.documents_read if result.documents_read is not None else 0
-        ),
-        "total_vdr_files": (
-            result.total_vdr_files if result.total_vdr_files is not None else 0
-        ),
-        "documents_skipped": (
-            result.documents_skipped if result.documents_skipped is not None else 0
-        ),
-        "documents_read_list": (
-            result.documents_read_list if result.documents_read_list is not None else []
-        ),
-        "documents_skipped_list": (
-            result.documents_skipped_list
-            if result.documents_skipped_list is not None
-            else []
-        ),
+        "documents_read": result.documents_read,
+        "total_vdr_files": result.total_vdr_files,
+        "documents_skipped": result.documents_skipped,
+        "documents_read_list": result.documents_read_list,
+        "documents_skipped_list": result.documents_skipped_list,
         "end_state": result.end_state,
     }
     if extra_fields:

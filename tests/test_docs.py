@@ -68,3 +68,36 @@ def test_public_docs_do_not_reference_local_user_paths() -> None:
         text = path.read_text(encoding="utf-8")
         assert "/Users/" not in text
         assert "/Users/houfu" not in text
+
+
+def test_adapter_guide_documents_null_vs_zero_distinction() -> None:
+    """Regression test for D-15 / D-16: the doc must explain the new
+    null-vs-zero contract for the LAB-compatible metric fields. Without
+    this test, a future edit could quietly drop the wording and adapters
+    would be left without a written record of what `None` means on disk
+    (adapter did not measure) vs. an explicit `0` (adapter measured zero)."""
+    text = guide_text()
+
+    # The new "Metrics And Status Semantics" addendum must surface the
+    # three contract terms: null, unmeasured, and "measured zero" as a
+    # contrast to "unmeasured".
+    assert "null" in text
+    assert "unmeasured" in text
+    assert "measured zero" in text
+
+    # The RunResult field list must show the list fields as nullable.
+    assert "list[str] | None" in text
+
+    # The old "optional document lists." line has been replaced by the
+    # new "optional document lists" line that continues with "of type
+    # list[str] | None" (line-wrapped in the markdown source). Guard
+    # both halves of the new wording.
+    assert "of type" in text
+    assert "list[str] | None" in text
+    # The original phrase "optional document lists." (period then
+    # end-of-line) is no longer standalone in the file. The new
+    # sentence continues past that boundary, so a naive substring
+    # check could still find "optional document lists"; the stronger
+    # check is that the file's text now contains the explanatory
+    # nullability clause.
+    assert "list[str] | None`; `None` means unmeasured" in text

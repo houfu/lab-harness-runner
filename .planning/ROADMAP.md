@@ -23,7 +23,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 <summary>🚧 v1.1 Post-v1.0 hardening & metrics fidelity (Phases 5-7) — PLANNING</summary>
 
 - [x] Phase 5: Honest Unmeasured Metrics Contract (completed 2026-06-05)
-- [ ] Phase 6: Metrics Extraction And Model Routing
+- [ ] Phase 6: Metrics Extraction And Model Routing (Planned: 3 plans)
 - [ ] Phase 7: Sweep Driver Hardening And LAB Aggregation
 
 </details>
@@ -37,7 +37,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 3. Implement Nanoclaw-LQ Adapter | v1.0 | 3/3 | Complete | 2026-06-01 |
 | 4. Completion, Metrics, Evaluation, And Scale-Out | v1.0 | 4/4 | Complete | 2026-06-01 |
 | 5. Honest Unmeasured Metrics Contract | v1.1 | 3/3 | Complete   | 2026-06-05 |
-| 6. Metrics Extraction And Model Routing | v1.1 | 0/? | Planned | — |
+| 6. Metrics Extraction And Model Routing | v1.1 | 0/3 | Planned | — |
 | 7. Sweep Driver Hardening And LAB Aggregation | v1.1 | 0/? | Planned | — |
 
 ---
@@ -275,9 +275,11 @@ Exit Criteria:
   the transcript's summed `usage` blocks, and a non-empty
   `documents_read_list` reflecting the agent's `Read` tool calls.
 
-Plans: TBD (split per file boundary: protocol + AnthropicUsageExtractor /
- DocumentReadExtractor / model routing + integration /
- live verification run)
+Plans: 3 plans
+
+- [ ] 06-01-PLAN.md — Extractor module: MetricsExtractor protocol, AnthropicUsageExtractor, DocumentReadExtractor, AnthropicTranscriptExtractor, NoOpExtractor, is_claude_model predicate (D-01..D-10)
+- [ ] 06-02-PLAN.md — Adapter wiring into EphemeralNanoclawAdapter + integration tests + metrics_provided end-to-end test (D-11..D-17)
+- [ ] 06-03-PLAN.md — Docs addendum (D-20) + operator-executed live verification run with --keep-failed (D-18, D-19)
 
 **Requirements satisfied:** EXT-01, EXT-02, EXT-03, EXT-04
 

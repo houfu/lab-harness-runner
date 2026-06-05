@@ -12,15 +12,15 @@ orchestrator over Harvey LAB.
 
 ### Contract & metrics honesty (CON)
 
-- [ ] **CON-01**: `RunResult` distinguishes "adapter measured 0" from
+- [x] **CON-01**: `RunResult` distinguishes "adapter measured 0" from
   "adapter did not measure". An adapter that did not measure a field
   must be representable in `RunResult` and `metrics.json` as distinct
   from a field whose value is genuinely zero.
-- [ ] **CON-02**: `write_metrics` writes `null` (not `0`) for unmeasured
+- [x] **CON-02**: `write_metrics` writes `null` (not `0`) for unmeasured
   fields; aggregation (`build_summary`, `summarize_variance`,
   `write_batch_summary`) skips null entries in mean / sum / variance
   computations.
-- [ ] **CON-03**: Aggregation results that include unmeasured entries
+- [x] **CON-03**: Aggregation results that include unmeasured entries
   are visibly annotated in the batch summary and any per-row metric
   output, so a downstream reader can tell which entries were measured
   vs. unmeasured (e.g. a `metrics_provided` field, a count of unmeasured
@@ -100,9 +100,9 @@ orchestrator over Harvey LAB.
 
 | Requirement | Phase | Plan(s) | Status |
 | ----------- | ----- | ------- | ------ |
-| CON-01 | Phase 5 | TBD | pending |
-| CON-02 | Phase 5 | TBD | pending |
-| CON-03 | Phase 5 | TBD | pending |
+| CON-01 | Phase 5 | Verified 2026-06-05 | complete |
+| CON-02 | Phase 5 | Verified 2026-06-05 | complete |
+| CON-03 | Phase 5 | Verified 2026-06-05 | complete |
 | EXT-01 | Phase 6 | TBD | pending |
 | EXT-02 | Phase 6 | TBD | pending |
 | EXT-03 | Phase 6 | TBD | pending |

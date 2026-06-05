@@ -36,7 +36,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 2. Build Harness-Neutral Package Core | v1.0 | 5/5 | Complete | 2026-05-30 |
 | 3. Implement Nanoclaw-LQ Adapter | v1.0 | 3/3 | Complete | 2026-06-01 |
 | 4. Completion, Metrics, Evaluation, And Scale-Out | v1.0 | 4/4 | Complete | 2026-06-01 |
-| 5. Honest Unmeasured Metrics Contract | v1.1 | 0/? | Planned | — |
+| 5. Honest Unmeasured Metrics Contract | v1.1 | 0/3 | Planned | — |
 | 6. Metrics Extraction And Model Routing | v1.1 | 0/? | Planned | — |
 | 7. Sweep Driver Hardening And LAB Aggregation | v1.1 | 0/? | Planned | — |
 
@@ -161,8 +161,11 @@ Exit Criteria:
   `docs/adapter-guide.md` are unchanged — the contract change is additive,
   not a rewrite of `end_state` semantics.
 
-Plans: TBD (split per file boundary: RunResult+write_metrics / aggregation /
- docs+tests)
+Plans: 3 plans
+
+- [ ] 05-01-PLAN.md — RunResult field defaults + write_metrics coercion removal (D-01, D-02, D-03, D-07, D-08) + test_metrics.py updates (D-17)
+- [ ] 05-02-PLAN.md — aggregation.py annotation + write_batch_summary row normalization (D-04, D-05, D-06, D-09, D-10, D-11, D-12) + _batch_row pass-through (D-14)
+- [ ] 05-03-PLAN.md — test_aggregation.py mixed/unmeasured coverage (D-18) + docs/adapter-guide.md addendum (D-15, D-16) + doc test
 
 **Requirements satisfied:** CON-01, CON-02, CON-03
 

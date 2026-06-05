@@ -30,10 +30,13 @@ The required callable shape is `run(task_spec, output_dir) -> RunResult`.
 - `run_id`: must match the `TaskSpec.run_id` used for the run.
 - `end_state`: one of `clean`, `agent_error`, or `timeout`.
 - `wall_clock_seconds`: elapsed adapter runtime.
-- `input_tokens`, `output_tokens`: optional token counts.
+- `input_tokens`, `output_tokens`: optional token counts; `None` means
+  unmeasured, `0` means measured zero.
 - `documents_read`, `total_vdr_files`, `documents_skipped`: optional document
-  coverage counts.
-- `documents_read_list`, `documents_skipped_list`: optional document lists.
+  coverage counts; `None` means unmeasured, `0` means measured zero.
+- `documents_read_list`, `documents_skipped_list`: optional document lists
+  of type `list[str] | None`; `None` means unmeasured, `[]` means measured
+  zero.
 
 The core package treats `RunResult.end_state` as adapter/protocol evidence. It is
 not the same thing as the benchmark-facing result.
@@ -125,6 +128,17 @@ benchmark_status: "clean"
 This means valid deliverables exist and LAB can evaluate the run, but the adapter
 did not observe `STATUS:DONE`. The timeout remains diagnostic evidence and must
 not be rewritten to `clean` inside `RunResult`.
+
+`metrics.json` distinguishes "adapter did not measure" from "adapter measured
+zero". The LAB-compatible token and coverage fields (`input_tokens`,
+`output_tokens`, `wall_clock_seconds`, `documents_read`, `total_vdr_files`,
+`documents_skipped`, `documents_read_list`, `documents_skipped_list`) are
+nullable on disk: a `null` value means the adapter did not measure that
+field, not that the measurement was zero. An explicit `0` is preserved
+verbatim. Adapter authors should leave a field unset (or set it to `None`)
+when the harness did not surface a measurement; downstream consumers and
+`build_summary` use the `null` value to skip the field in mean / sum /
+variance computations and to record an unmeasured-row count.
 
 Raw adapter status and benchmark-facing status answer different questions:
 

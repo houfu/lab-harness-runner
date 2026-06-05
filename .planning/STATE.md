@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-status: Awaiting next milestone
-last_updated: "2026-06-02T00:08:15.776Z"
-last_activity: 2026-06-02 — Milestone v1.0 completed and archived
+milestone: v1.1
+milestone_name: Post-v1.0 hardening & metrics fidelity
+status: planning
+last_updated: "2026-06-05T02:22:38.409Z"
+last_activity: 2026-06-05
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # State
@@ -92,10 +92,10 @@ Start the next milestone with `/gsd:new-milestone` (questioning → research →
 
 ## Current Position
 
-Phase: Milestone v1.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-02 — Milestone v1.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-05 — Milestone v1.1 started
 
 ## Operator Next Steps
 

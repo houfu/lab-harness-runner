@@ -65,6 +65,24 @@ A single LAB task can be run through nanoclaw-lq end to end, producing expected
 deliverables, `metrics.json`, LAB `scores.json`, and a recorded run end-state
 without modifying LAB.
 
+## Current Milestone: v1.1 — Post-v1.0 hardening & metrics fidelity
+
+**Goal:** Make nanoclaw-backed metrics honest (measured vs. unmeasured) and
+harden the post-v1.0 sweep driver, without changing the runner's role as a
+thin orchestrator over Harvey LAB.
+
+**Target features:**
+
+- Honest "unmeasured" semantics in `RunResult` & `metrics.json` (CON-01..03).
+- `MetricsExtractor` protocol with an `AnthropicUsageExtractor` reading
+  `usage` from nanoclaw's transcript jsonl, plus a document-read extractor
+  and model-based routing that returns nulls for the Ollama path
+  (EXT-01..04).
+- `sweep.sh` hardening grounded in observed `results/` wall-clock data,
+  dual-output `inventory`, post-run summary, non-zero exit with per-run
+  stderr, and an opt-in flag that shells out to LAB's `evaluation.compare`
+  (SWP-01..04, LAB-01..02).
+
 ## Current State
 
 **Shipped:** v1.0 MVP (2026-06-02) — Phases 1-4, 13 plans, 99 tests passing.
@@ -72,6 +90,22 @@ without modifying LAB.
 The success metric is met: one LAB task (`corporate-ma/compare-matter-plan-against-engagement-letter`)
 ran end to end through the nanoclaw-lq adapter, producing
 `discrepancy-analysis-memo.docx`, `metrics.json`, and a recorded run end-state.
+
+**Post-v1.0 merges (4 Jun 2026, outside GSD):** `5974d69` (deliverable-gated
+poll + ephemeral groups), `637228c` (per-run agent model), `3a1fd89`
+(resumable parallel sweep driver), `17d3eb7` (FD-exhaustion / xargs-abort
+fix), `3e0dd71` (TIMEOUT knob), `2884ae7` (destroy-shim stderr surfacing).
+v1.1 Phase 7 hardens these commits and gives them a GSD-tracked verification
+path. The 4 Jun 1251-task sweep crashed ~193/1251 with ENFILE before the FD
+fix; the 600 s `TIMEOUT` default is empirically defensible (p99 of 137 clean
+runs = 586.2s, max = 596.1s).
+
+**Known gap (root of v1.1):** `RunResult` declares `int | None` for token
+and coverage fields, but `NanoclawAdapter.run()` never populates them and
+`write_metrics` silently coerces `None → 0`. Every nanoclaw-backed
+`metrics.json` reports `input_tokens: 0, output_tokens: 0` for the same
+reason, even when the agent did real work. v1.1 closes this gap end-to-end
+(CON-01..03 contract fix + EXT-01..04 real extraction).
 
 ### Validated
 
@@ -84,6 +118,13 @@ ran end to end through the nanoclaw-lq adapter, producing
   semantics (timeout-with-deliverable → benchmark-clean) — v1.0
 - ✓ Multi-task / multi-seed batch aggregation with variance reporting — v1.0
 - ✓ Documented third-party adapter contract — v1.0
+- ✓ Deliverable-gated poll short-circuit + ephemeral per-run nanoclaw groups
+  (`5974d69`) — post-v1.0
+- ✓ Optional per-run agent model with Ollama routing for non-claude models
+  (`637228c`) — post-v1.0
+- ✓ Resumable parallel `sweep.sh` with FD-exhaustion fix, `TIMEOUT` knob, and
+  destroy-shim stderr surfacing (`3a1fd89`, `17d3eb7`, `3e0dd71`, `2884ae7`)
+  — post-v1.0
 
 ### Key Decisions
 
@@ -92,8 +133,12 @@ ran end to end through the nanoclaw-lq adapter, producing
 | LAB is an unmodified dependency, integrated via filesystem/evaluator surfaces | Keep runner portable and avoid forking LAB | ✓ Good |
 | Adapter contract `run(task_spec, output_dir) -> RunResult` | Narrow, reusable boundary for future harnesses | ✓ Good |
 | Completion = terminal `STATUS:` signal + wall-clock timeout | Distinguish clean completion from hangs | ✓ Good |
-| Benchmark status derives clean from valid deliverables while preserving raw `end_state: timeout` | Honest reporting when output exists but no terminal signal observed | ⚠️ Revisit — exercise on more tasks |
+| Benchmark status derives clean from valid deliverables while preserving raw `end_state: timeout` | Honest reporting when output exists but no terminal signal observed | ✓ Resolved by v1.1 (real metrics path replaces the gap that surfaced this Revisit) |
 | Node dispatch shim lives in the nanoclaw-lq repo (Option A) | Avoid reimplementing nanoclaw message protocol in Python | ✓ Good |
+| Anthropic token usage lives in nanoclaw's transcript jsonl, not `messages_out` | Discovered during v1.1 planning; verified against the v1.0 proof group `820628bb-c260-4bb4-bd60-b5a3b9ce4f58` | ✓ Good (v1.1 Phase 6) |
+| Sweep driver `TIMEOUT` 600s default | Empirically defends p99 of clean runs (586.2s) while bounding non-deliverable stalls; rationalised in v1.1 Phase 7 | ✓ Good (v1.1 Phase 7) |
+| Sweep driver shells out to LAB's `evaluation.compare` for aggregation; no new aggregator lives in the runner | Keep the runner thin; defer to Harvey LAB | ✓ Good (v1.1 Phase 7) |
+| `MetricsExtractor` is a pluggable Protocol; Ollama path returns nulls without raising | Model-neutral default; future Ollama-aware extractor slots in without contract change | ✓ Good (v1.1 Phase 6) |
 
 ### Context / Known Limitations
 
@@ -104,15 +149,32 @@ ran end to end through the nanoclaw-lq adapter, producing
   (`task.json["instructions"]`). A move to `instructions.md` would be a contract change.
 - Phase 3 lacks a formal `03-VERIFICATION.md`; closure evidence lives in UAT,
   security, validation, summaries, tests, and the proof deliverable.
+- Cache-token breakdown (`cache_read_input_tokens`,
+  `cache_creation_input_tokens`) is left as a sidecar metric in v1.1, not
+  folded into `input_tokens`. Folding them would be ambiguous (cache reads
+  get a 90% discount) and downstream consumers may want the raw split.
+- Document-read metric records container-internal `file_path` strings (e.g.
+  `/tmp/engagement.txt`) — not LAB `documents_dir` filenames. The contract
+  is "what the agent read", not "what is in `documents_dir`".
 
 ## Next Milestone Goals
 
-Deferred from v1.0, candidates for the next milestone:
+Deferred from v1.1, candidates for a later milestone:
 
-- Additional adapters beyond nanoclaw-lq (REQ-23, deferred until a real second
-  harness needs one).
-- Upstream LAB documentation PR for stable task/result contracts.
-- Public package publishing and broader community onboarding (REQ-24).
+- **REQ-23**: Additional adapters beyond nanoclaw-lq (deferred until a real
+  second harness needs one). v1.1 deliberately did not include a second
+  adapter; the `Adapter` contract remains unexercised in production.
+- **REQ-24**: Public package publishing and broader community onboarding.
+  v1.1 ships the metrics-honest contract that would be the natural
+  reference point for a v1.1-era public release.
+- **Upstream LAB documentation PR** for stable task/result contracts. v1.1
+  adds a new coupling (sweep driver → LAB `evaluation.compare`) that
+  becomes worth upstreaming once v1.1 has been used in production.
+- **Per-task token / duration histogram in sweep driver** — deferred until
+  v1.1 Phase 6 metrics extraction lands and gives real data to plot.
+- **Tightening the deliverable-gated poll short-circuit** (introduced in
+  `5974d69`) — deferred; v1.1 inherits the gate as-is, and tightening
+  waits for any false-positive "deliverable present" cases to surface.
 
 ---
 

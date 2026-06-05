@@ -101,3 +101,54 @@ def test_adapter_guide_documents_null_vs_zero_distinction() -> None:
     # check is that the file's text now contains the explanatory
     # nullability clause.
     assert "list[str] | None`; `None` means unmeasured" in text
+
+
+def test_adapter_guide_documents_metrics_extraction_section() -> None:
+    """Phase 6 D-20 regression: the adapter guide must document the
+    MetricsExtractor extension point, the Anthropic vs no-op routing
+    rule, and the cache fold note. The 'Results are whole agent-system
+    outcomes' invariant is preserved.
+
+    Each required substring guards a specific D-20 topic; if a future
+    edit quietly drops the wording, the matching assertion fails and
+    the test points to the exact term that was lost. The exact
+    protocol signature is asserted so a future edit that drifts the
+    signature away from `lab_harness_runner.metrics_extraction`'s
+    `MetricsExtractor.extract` definition fails this test.
+    """
+    text = guide_text()
+
+    required_substrings = [
+        # Section heading is present (D-20's three paragraphs live
+        # under this heading).
+        "## Metrics Extraction",
+        # Protocol name is named (paragraph 1).
+        "MetricsExtractor",
+        # Exact protocol signature matches lab_harness_runner.metrics_extraction
+        # (paragraph 1). Drift from the source will fail this check.
+        "extract(messages_out: list[dict]) -> RunResult",
+        # Routing predicate is named (paragraph 2).
+        "is_claude_model",
+        # Prefix rule is mentioned alongside the predicate (paragraph 2).
+        "claude",
+        # No-op class is named (paragraph 2 — pairs with Ollama to
+        # confirm the EXT-04 clause).
+        "NoOpExtractor",
+        # EXT-04 Ollama clause's example model is documented (paragraph 2).
+        "Ollama",
+        # Cache fold is documented by name (paragraph 3 regression guard).
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+        # Existing invariant from L165 is still present (D-20 anchor;
+        # the section is additive only).
+        "Results are whole agent-system outcomes",
+        # end_state semantics on the extractor's return is documented
+        # (paragraph 1).
+        '"clean"',
+    ]
+
+    for substring in required_substrings:
+        assert substring in text, (
+            f"docs/adapter-guide.md is missing the D-20 required "
+            f"substring: {substring!r}"
+        )

@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Post-v1.0 hardening & metrics fidelity
-status: planning
-last_updated: "2026-06-05T02:22:38.409Z"
-last_activity: 2026-06-05
+status: Ready for planning
+last_updated: "2026-06-05T05:30:00.000Z"
+last_activity: 2026-06-05 — Phase 5 context gathered
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -92,14 +92,15 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 - 2026-06-01T16:16:14Z: Completed 04-02-PLAN.md (primary benchmark command, report preservation, and optional LAB compare/dashboard paths). 78 tests pass.
 - 2026-06-01T16:22:59Z: Completed 04-03-PLAN.md (multi-task/multi-seed aggregation and variance reporting). 86 tests pass; no aggregate scores.json under LAB results/batches.
 - 2026-06-01T16:28:46Z: Completed 04-04-PLAN.md (practical adapter guide and second-adapter compatibility check). 89 tests pass; no second adapter production file added.
+- 2026-06-05T05:30:00Z: Phase 5 context gathered. Decisions: per-row `metrics_provided` boolean + top-level `unmeasured_counts` (CON-03); `documents_read_list` / `documents_skipped_list` nullable on `RunResult` (CON-01); `_without_null_values` still strips `None` from `extra_fields`; list-field variance reports length statistics over measured rows. CONTEXT.md at `.planning/phases/05-honest-unmeasured-metrics-contract/05-CONTEXT.md`.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 5 - Honest Unmeasured Metrics Contract
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-05 — Milestone v1.1 started
+Status: Ready for planning
+Last activity: 2026-06-05 — Phase 5 context gathered
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- /gsd:plan-phase 5 to plan the implementation (or /gsd:research-phase 5 first if deeper code research is desired)

@@ -41,6 +41,19 @@ REQUIRED_ROW_FIELDS = (
     "total_vdr_files",
 )
 
+LAB_METRIC_FIELDS = (
+    "input_tokens",
+    "output_tokens",
+    "wall_clock_seconds",
+    "documents_read",
+    "total_vdr_files",
+    "documents_skipped",
+    "documents_read_list",
+    "documents_skipped_list",
+)
+
+LAB_LIST_VARIANCE_FIELDS = ("documents_read_list", "documents_skipped_list")
+
 
 def _jsonable(value: object) -> object:
     if isinstance(value, Path):
@@ -84,14 +97,32 @@ def summarize_variance(values: list[float]) -> dict[str, float | int]:
 
 def build_summary(rows: list[dict[str, object]]) -> dict[str, object]:
     batch_id = str(rows[0]["batch_id"]) if rows else ""
-    json_rows = [_jsonable(row) for row in rows]
+    unmeasured_counts: dict[str, int] = {field: 0 for field in LAB_METRIC_FIELDS}
+    json_rows = []
+    for row in rows:
+        row_metrics_provided = True
+        for field in LAB_METRIC_FIELDS:
+            if row.get(field) is None:
+                row_metrics_provided = False
+                unmeasured_counts[field] += 1
+        annotated = dict(row)
+        annotated["metrics_provided"] = row_metrics_provided
+        json_rows.append(_jsonable(annotated))
     variance = {
         field: summarize_variance(_numeric_values(row.get(field) for row in rows))
         for field in VARIANCE_FIELDS
     }
+    for list_field in LAB_LIST_VARIANCE_FIELDS:
+        lengths = [
+            float(len(row[list_field]))
+            for row in rows
+            if isinstance(row.get(list_field), list)
+        ]
+        variance[list_field] = {"lengths": summarize_variance(lengths)}
     return {
         "batch_id": batch_id,
         "row_count": len(rows),
+        "unmeasured_counts": unmeasured_counts,
         "rows": json_rows,
         "variance": variance,
     }
@@ -109,9 +140,14 @@ def write_batch_summary(
     if summary_path.name == "scores.json":
         raise ValueError("batch summary must not be named scores.json")
 
+    def _default_for(field: str) -> object:
+        return None if field in LAB_METRIC_FIELDS else ""
+
     normalized_rows = []
     for row in rows:
-        normalized = {field: row.get(field, "") for field in REQUIRED_ROW_FIELDS}
+        normalized = {
+            field: row.get(field, _default_for(field)) for field in REQUIRED_ROW_FIELDS
+        }
         normalized.update(row)
         normalized_rows.append(normalized)
 

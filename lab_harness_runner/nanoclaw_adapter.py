@@ -15,6 +15,11 @@ import uuid
 from pathlib import Path
 
 from lab_harness_runner.adapter import RunResult, TaskSpec
+from lab_harness_runner.metrics_extraction import (
+    AnthropicTranscriptExtractor,
+    NoOpExtractor,
+    is_claude_model,
+)
 from lab_harness_runner.task_reader import _reject_unsafe_relative_path
 
 _FOOTER_TEMPLATE = (
@@ -53,6 +58,11 @@ class NanoclawAdapter:
         self.group_id = group_id
         self.timeout_seconds = timeout_seconds
         self.poll_interval = poll_interval
+        # The shim's sessionId is captured here so the outer ephemeral
+        # adapter can locate the per-group transcript jsonl. None when no
+        # dispatch has been run yet (D-03 anchor — _dispatch returns the
+        # sessionId in its parsed JSON).
+        self.shim_session_id: str | None = None
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -285,6 +295,10 @@ class NanoclawAdapter:
 
         # Step 2 — dispatch: shell out to send-lab-message.ts
         shim_result = self._dispatch(task_spec)
+        # Capture the shim's sessionId so the outer EphemeralNanoclawAdapter
+        # can locate the per-group transcript jsonl. None when the shim did
+        # not return a sessionId (D-03).
+        self.shim_session_id = str(shim_result["sessionId"]) if shim_result.get("sessionId") else None
         outbound_db_path = Path(shim_result["outboundDbPath"])
 
         # Step 3 — poll for completion (deliverables landing, or a STATUS: signal)
@@ -327,6 +341,35 @@ def _scan_json_result(stdout: str, *required_keys: str) -> dict:
     )
 
 
+class _DeferredAnthropicExtractor:
+    """Two-stage extractor: bound to a per-group transcript_dir at extract() time.
+
+    D-11 routes at __init__ time but group_id is only known after _create_group
+    returns. This wrapper defers AnthropicTranscriptExtractor construction to
+    run() time. Satisfies the MetricsExtractor Protocol structurally
+    (defines an `extract` method returning a RunResult).
+    """
+
+    def __init__(self) -> None:
+        self._transcript_dir: Path | None = None
+        self._session_id: str | None = None
+
+    def set_binding(self, transcript_dir: Path, session_id: str) -> None:
+        self._transcript_dir = transcript_dir
+        self._session_id = session_id
+
+    def extract(self, messages_out: list[dict]) -> RunResult:
+        if self._transcript_dir is None or self._session_id is None:
+            # Not bound yet — programming error: adapter always calls
+            # set_binding() before extract() in run(). Return the same
+            # no-schema shape as the missing-transcript path.
+            return RunResult(run_id="", end_state="clean", wall_clock_seconds=0.0)
+        return AnthropicTranscriptExtractor(
+            transcript_dir=self._transcript_dir,
+            session_id=self._session_id,
+        ).extract(messages_out)
+
+
 class EphemeralNanoclawAdapter:
     """Adapter that provisions a fresh nanoclaw group per run, then tears it down.
 
@@ -360,6 +403,25 @@ class EphemeralNanoclawAdapter:
         # None -> the group keeps nanoclaw's default model (model-neutral). A
         # non-claude model is routed to the host Ollama by the create shim.
         self.model = model
+        # D-11: route at construction time; cache the chosen extractor.
+        # Claude-prefixed models get a deferred wrapper that run() binds
+        # to the resolved per-group transcript_dir and sessionId; everything
+        # else (None, "", "ollama", "deepseek-v4-flash:cloud", "qwen2.5", ...)
+        # gets a no-op that returns None metrics without raising.
+        self._extractor = self._select_extractor()
+
+    def _select_extractor(self):
+        """Cache the extractor at construction time (D-11).
+
+        Claude-prefixed models get a deferred wrapper that the run() method
+        binds to the resolved per-group transcript_dir and sessionId;
+        everything else (None, "", "ollama", "deepseek-v4-flash:cloud",
+        "qwen2.5", etc.) gets a no-op that returns None metrics without
+        raising (D-10, EXT-04 Ollama clause).
+        """
+        if is_claude_model(self.model):
+            return _DeferredAnthropicExtractor()
+        return NoOpExtractor()
 
     def _create_group(self, name: str) -> str:
         """Create a fresh group via the shim and return its agent group id.
@@ -411,7 +473,65 @@ class EphemeralNanoclawAdapter:
                 timeout_seconds=self.timeout_seconds,
                 poll_interval=self.poll_interval,
             )
-            return adapter.run(task_spec=task_spec, output_dir=output_dir)
+            base_result = adapter.run(task_spec=task_spec, output_dir=output_dir)
+
+            # Step 2 — invoke the extractor selected at __init__ time (D-13).
+            # The Anthropic path needs the per-group transcript_dir and the
+            # shim's sessionId, both resolved from the inner adapter's
+            # dispatch result (stashed on `adapter.shim_session_id` by
+            # NanoclawAdapter.run).
+            shim_session_id = adapter.shim_session_id
+            if shim_session_id is not None and isinstance(
+                self._extractor, _DeferredAnthropicExtractor
+            ):
+                transcript_dir = (
+                    self.nanoclaw_dir
+                    / "data"
+                    / "v2-sessions"
+                    / group_id
+                    / ".claude-shared"
+                    / "projects"
+                    / "-workspace-agent"
+                )
+                self._extractor.set_binding(transcript_dir, shim_session_id)
+
+            # D-14: missing-transcript breadcrumb is logged after extract
+            # when the deferred Anthropic path cannot find a matching
+            # sessionId jsonl. The detection is "extractor returned a
+            # RunResult with all token / coverage fields None" — see the
+            # block below.
+            extracted = self._extractor.extract(messages_out=[])
+
+            if (
+                isinstance(self._extractor, _DeferredAnthropicExtractor)
+                and shim_session_id is not None
+                and extracted.input_tokens is None
+                and extracted.output_tokens is None
+                and extracted.documents_read is None
+                and extracted.documents_read_list is None
+            ):
+                print(
+                    f"[ephemeral] metrics: transcript not found for session "
+                    f"{shim_session_id}; skipping extraction",
+                    file=sys.stderr,
+                )
+
+            # Step 3 — merge: extractor fills token / coverage fields; base
+            # result owns end_state and wall_clock_seconds. The merge is
+            # field-by-field (D-13 step 2's "replace" applies only to the
+            # metric fields, not end_state or wall_clock_seconds).
+            return RunResult(
+                run_id=base_result.run_id,
+                end_state=base_result.end_state,
+                wall_clock_seconds=base_result.wall_clock_seconds,
+                input_tokens=extracted.input_tokens,
+                output_tokens=extracted.output_tokens,
+                documents_read=extracted.documents_read,
+                total_vdr_files=extracted.total_vdr_files,
+                documents_skipped=extracted.documents_skipped,
+                documents_read_list=extracted.documents_read_list,
+                documents_skipped_list=extracted.documents_skipped_list,
+            )
         except Exception:
             failed = True
             raise

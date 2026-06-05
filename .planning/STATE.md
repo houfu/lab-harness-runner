@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Post-v1.0 hardening & metrics fidelity
-status: executing
-last_updated: "2026-06-05T06:16:54.580Z"
-last_activity: 2026-06-05 -- Phase 05 execution started
+status: planning
+last_updated: "2026-06-05T08:35:54.226Z"
+last_activity: 2026-06-05
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_plans: 3
+  percent: 33
 ---
 
 # State
@@ -27,7 +27,7 @@ and roadmap are defined; awaiting phase execution.
 See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** Run Harvey LAB tasks through external agent harnesses (starting with nanoclaw-lq) and score them with LAB's own evaluator, without modifying LAB.
-**Current focus:** Phase 05 — honest-unmeasured-metrics-contract
+**Current focus:** Phase 6 — metrics extraction and model routing
 
 ## Source Documents
 
@@ -96,10 +96,10 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 ## Current Position
 
-Phase: 05 (honest-unmeasured-metrics-contract) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 05
-Last activity: 2026-06-05 -- Phase 05 execution started
+Phase: 6
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-05
 
 ## Operator Next Steps
 

@@ -88,3 +88,77 @@ def outbound_db(tmp_path: Path) -> Path:
     conn.commit()
     conn.close()
     return db_path
+
+
+@pytest.fixture()
+def transcript_dir_with_claude_session(tmp_path: Path) -> tuple[Path, str, str]:
+    """Build a tmp_path-rooted nanoclaw transcript jsonl with a Claude session.
+
+    The layout mirrors the D-04 path the adapter wires:
+        <tmp_path>/data/v2-sessions/<group_id>/.claude-shared/projects/-workspace-agent/<session_id>.jsonl
+
+    Test usage: pass ``nanoclaw_dir=tmp_path`` to the adapter; the wiring
+    resolves the jsonl at ``nanoclaw_dir / "data" / "v2-sessions" / ...``
+    and finds this fixture's file.
+
+    Returns ``(transcript_dir, group_id, session_id)``. The jsonl contains:
+      * Line 1: a system line that sets the sessionId for the resolver
+        (D-04 reads ``sessionId`` at the top of each line).
+      * Line 2: an assistant message with input_tokens=100, output_tokens=50
+        (text-only content).
+      * Line 3: an assistant message with input_tokens=200, output_tokens=80
+        AND a ``Read`` tool_use block whose ``input.file_path`` is
+        ``/tmp/foo.txt``.
+
+    Expected sums (D-16 / D-17 integration test):
+      input_tokens = 300, output_tokens = 130,
+      documents_read = 1, documents_read_list = ["/tmp/foo.txt"].
+    """
+    group_id = "ag-test-eph"
+    session_id = "sess-test-001"
+    transcript_dir = (
+        tmp_path
+        / "data"
+        / "v2-sessions"
+        / group_id
+        / ".claude-shared"
+        / "projects"
+        / "-workspace-agent"
+    )
+    transcript_dir.mkdir(parents=True, exist_ok=True)
+
+    jsonl_path = transcript_dir / f"{session_id}.jsonl"
+    lines = [
+        json.dumps(
+            {"sessionId": session_id, "type": "system", "content": "session boot"}
+        ),
+        json.dumps(
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "reading..."}],
+                    "usage": {"input_tokens": 100, "output_tokens": 50},
+                },
+            }
+        ),
+        json.dumps(
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "name": "Read",
+                            "input": {"file_path": "/tmp/foo.txt"},
+                        }
+                    ],
+                    "usage": {"input_tokens": 200, "output_tokens": 80},
+                },
+            }
+        ),
+    ]
+    jsonl_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    return transcript_dir, group_id, session_id

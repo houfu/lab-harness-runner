@@ -365,7 +365,14 @@ def test_ephemeral_model_neutral_by_default(tmp_path: Path) -> None:
 
 
 def test_ephemeral_creates_and_destroys_on_success(tmp_path: Path) -> None:
-    """Successful run -> group created once, inner adapter runs, group destroyed."""
+    """Successful run -> group created once, inner adapter runs, group destroyed.
+
+    The outer adapter merges the inner's end_state / wall_clock_seconds with
+    the extractor's None fields (NoOp for model=None default). The merged
+    RunResult is a NEW instance, not the inner's — the wiring in Plan 02
+    builds a new RunResult so the extractor's metric fields can replace the
+    base's (all-None) ones.
+    """
     from lab_harness_runner.adapter import RunResult
     from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
 
@@ -394,7 +401,16 @@ def test_ephemeral_creates_and_destroys_on_success(tmp_path: Path) -> None:
     # Inner adapter was bound to the freshly created group id.
     assert ctor.call_args.kwargs["group_id"] == "ag-eph-99"
     destroy.assert_called_once_with("ag-eph-99")
-    assert result is inner_result
+    # The merge preserves the inner's run_id, end_state, wall_clock_seconds
+    # (the adapter's invariants) and uses the extractor's None fields
+    # (NoOp path for model=None default).
+    assert result.end_state == inner_result.end_state  # "timeout" (preserved by the merge)
+    assert result.run_id == inner_result.run_id  # "run-eph-1" (preserved by the merge)
+    assert result.wall_clock_seconds == inner_result.wall_clock_seconds  # 1.0 (preserved)
+    assert result.input_tokens is None
+    assert result.output_tokens is None
+    assert result.documents_read is None
+    assert result.documents_read_list is None
 
 
 def test_ephemeral_destroys_on_failure_by_default(tmp_path: Path) -> None:
@@ -445,3 +461,182 @@ def test_ephemeral_keeps_failed_group_when_flag_set(tmp_path: Path) -> None:
         adapter.run(task_spec=task_spec, output_dir=output_dir)
 
     destroy.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# EphemeralNanoclawAdapter + MetricsExtractor integration (Plan 02, D-13..D-17)
+# ---------------------------------------------------------------------------
+
+
+def test_ephemeral_extracts_metrics_for_claude_model(
+    tmp_path: Path, transcript_dir_with_claude_session: tuple[Path, str, str]
+) -> None:
+    """EphemeralNanoclawAdapter(model='claude-*') -> Anthropic extractor fires.
+
+    Phase 6 D-16 / D-17 integration test: the wiring in
+    EphemeralNanoclawAdapter.run() binds the deferred Anthropic extractor to
+    the per-group transcript_dir + the shim's sessionId, runs the inner
+    NanoclawAdapter (mocked), then merges the extractor's metric fields
+    into the returned RunResult.
+
+    The fixture provides a jsonl with two assistant messages
+    (input=100+200=300, output=50+80=130) and one Read tool_use block
+    (file_path=/tmp/foo.txt).
+    """
+    from lab_harness_runner.adapter import RunResult
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    _transcript_dir, group_id, session_id = transcript_dir_with_claude_session
+
+    adapter = EphemeralNanoclawAdapter(
+        nanoclaw_dir=tmp_path, model="claude-opus-4-8"
+    )
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    task_spec = _eph_task_spec(tmp_path)
+
+    # The inner NanoclawAdapter's run() is mocked to return a stub
+    # RunResult; shim_session_id is stashed on the mock instance by
+    # the wiring (we set it explicitly so the merge's adapter.shim_session_id
+    # read returns the fixture's sessionId).
+    inner = MagicMock()
+    inner.run.return_value = RunResult(
+        run_id=task_spec.run_id, end_state="clean", wall_clock_seconds=42.0
+    )
+    inner.shim_session_id = session_id
+
+    with (
+        patch.object(adapter, "_create_group", return_value=group_id),
+        patch.object(adapter, "_destroy_group"),
+        patch(
+            "lab_harness_runner.nanoclaw_adapter.NanoclawAdapter",
+            return_value=inner,
+        ),
+    ):
+        result = adapter.run(task_spec=task_spec, output_dir=output_dir)
+
+    # The merge preserves the inner's end_state / wall_clock_seconds /
+    # run_id (adapter's invariants) and replaces the token / coverage
+    # fields with the extractor's output.
+    assert result.end_state == "clean"
+    assert result.wall_clock_seconds == 42.0
+    assert result.run_id == task_spec.run_id
+    # D-05 / D-09 / D-13: extracted metrics come from the jsonl.
+    assert result.input_tokens == 300
+    assert result.output_tokens == 130
+    # D-07 / D-08: documents_read is the count, documents_read_list is
+    # the verbatim file_path strings (no basename remapping).
+    assert result.documents_read == 1
+    assert result.documents_read_list == ["/tmp/foo.txt"]
+
+
+def test_ephemeral_noop_for_non_claude_model(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """EphemeralNanoclawAdapter(model='ollama') -> NoOp path; all fields None.
+
+    Phase 6 D-10 / EXT-04 Ollama clause: a non-claude model routes to the
+    no-op extractor. The no-op returns a RunResult with all token /
+    coverage fields as None and emits no stderr breadcrumb (the breadcrumb
+    is gated on the deferred-Anthropic branch).
+    """
+    from lab_harness_runner.adapter import RunResult
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path, model="ollama")
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    task_spec = _eph_task_spec(tmp_path)
+
+    inner = MagicMock()
+    inner.run.return_value = RunResult(
+        run_id=task_spec.run_id, end_state="clean", wall_clock_seconds=7.5
+    )
+    inner.shim_session_id = "sess-noop-001"
+
+    with (
+        patch.object(adapter, "_create_group", return_value="ag-noop-1"),
+        patch.object(adapter, "_destroy_group"),
+        patch(
+            "lab_harness_runner.nanoclaw_adapter.NanoclawAdapter",
+            return_value=inner,
+        ),
+    ):
+        result = adapter.run(task_spec=task_spec, output_dir=output_dir)
+
+    # Adapter invariants preserved.
+    assert result.end_state == "clean"
+    assert result.wall_clock_seconds == 7.5
+    assert result.run_id == task_spec.run_id
+    # All metric fields are None — the NoOp path.
+    assert result.input_tokens is None
+    assert result.output_tokens is None
+    assert result.documents_read is None
+    assert result.total_vdr_files is None
+    assert result.documents_skipped is None
+    assert result.documents_read_list is None
+    assert result.documents_skipped_list is None
+
+    # Defensive: the no-op path must not log the missing-transcript
+    # breadcrumb (the breadcrumb is gated on _DeferredAnthropicExtractor).
+    captured = capsys.readouterr()
+    assert "transcript not found" not in captured.err
+    assert "transcript not found" not in captured.out
+
+
+def test_ephemeral_logs_breadcrumb_on_missing_transcript(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """model='claude-opus-4-8' with no jsonl on disk -> D-14 breadcrumb + base result.
+
+    Phase 6 D-14: when the deferred Anthropic extractor cannot find a
+    matching sessionId jsonl, the adapter logs a one-line stderr breadcrumb
+    and returns the base RunResult with all token / coverage fields None
+    (the base result is preserved, not replaced with a partial extract).
+    """
+    from lab_harness_runner.adapter import RunResult
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(
+        nanoclaw_dir=tmp_path, model="claude-opus-4-8"
+    )
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    task_spec = _eph_task_spec(tmp_path)
+
+    inner = MagicMock()
+    inner.run.return_value = RunResult(
+        run_id=task_spec.run_id, end_state="clean", wall_clock_seconds=15.0
+    )
+    # A sessionId the resolver will not find — the jsonl does not exist
+    # in tmp_path/v2-sessions/<group>/.claude-shared/projects/-workspace-agent/
+    # because tmp_path has no v2-sessions layout.
+    inner.shim_session_id = "sess-missing-001"
+
+    with (
+        patch.object(adapter, "_create_group", return_value="ag-missing-1"),
+        patch.object(adapter, "_destroy_group"),
+        patch(
+            "lab_harness_runner.nanoclaw_adapter.NanoclawAdapter",
+            return_value=inner,
+        ),
+    ):
+        result = adapter.run(task_spec=task_spec, output_dir=output_dir)
+
+    # Adapter invariants preserved (end_state + wall_clock_seconds from
+    # the inner adapter's poll loop).
+    assert result.end_state == "clean"
+    assert result.wall_clock_seconds == 15.0
+    assert result.run_id == task_spec.run_id
+    # The base result is kept: all metric fields stay None.
+    assert result.input_tokens is None
+    assert result.output_tokens is None
+    assert result.documents_read is None
+    assert result.documents_read_list is None
+
+    # D-14: stderr breadcrumb is logged with the exact format.
+    captured = capsys.readouterr()
+    assert (
+        "[ephemeral] metrics: transcript not found for session "
+        "sess-missing-001; skipping extraction"
+    ) in captured.err

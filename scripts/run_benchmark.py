@@ -245,19 +245,19 @@ def _batch_row(
         "score": run_summary.get("score", _score_from_scores(scores)),
         "all_pass": run_summary.get("all_pass", _all_pass_from_scores(scores)),
         "wall_clock_seconds": run_summary.get(
-            "wall_clock_seconds", metrics.get("wall_clock_seconds", "")
+            "wall_clock_seconds", metrics.get("wall_clock_seconds")
         ),
         "input_tokens": run_summary.get(
-            "input_tokens", metrics.get("input_tokens", "")
+            "input_tokens", metrics.get("input_tokens")
         ),
         "output_tokens": run_summary.get(
-            "output_tokens", metrics.get("output_tokens", "")
+            "output_tokens", metrics.get("output_tokens")
         ),
         "documents_read": run_summary.get(
-            "documents_read", metrics.get("documents_read", "")
+            "documents_read", metrics.get("documents_read")
         ),
         "total_vdr_files": run_summary.get(
-            "total_vdr_files", metrics.get("total_vdr_files", "")
+            "total_vdr_files", metrics.get("total_vdr_files")
         ),
     }
 

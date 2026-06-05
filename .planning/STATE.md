@@ -15,26 +15,29 @@ progress:
 
 # State
 
-Updated: 2026-06-02
+Updated: 2026-06-05
 
 ## Current Mode
 
-Milestone v1.0 MVP shipped and archived. Awaiting next milestone.
+Milestone v1.1 Post-v1.0 hardening & metrics fidelity in planning. Requirements
+and roadmap are defined; awaiting phase execution.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-02)
+See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** Run Harvey LAB tasks through external agent harnesses (starting with nanoclaw-lq) and score them with LAB's own evaluator, without modifying LAB.
-**Current focus:** Planning next milestone.
+**Current focus:** Execute milestone v1.1 — three phases (5, 6, 7) covering honest-unmeasured contract, MetricsExtractor wiring, and sweep.sh hardening with LAB-aggregation integration.
 
 ## Source Documents
 
 - `lab-nanoclaw-plan.md` classified as DOC.
+- `.planning/REQUIREMENTS.md` v1.1 — 13 requirements across CON / EXT / SWP / LAB categories.
+- `.planning/ROADMAP.md` v1.1 — 3 phases, 13/13 requirements mapped.
 
 ## Next Action
 
-Start the next milestone with `/gsd:new-milestone` (questioning → research → requirements → roadmap).
+`/gsd:discuss-phase 5` (or `/gsd:plan-phase 5` to skip discussion).
 
 ## Decisions
 

@@ -37,7 +37,7 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 ## Next Action
 
-`/gsd:discuss-phase 5` (or `/gsd:plan-phase 5` to skip discussion).
+`/gsd:plan-phase 6` (or `/gsd:discuss-phase 6` to revisit context).
 
 ## Decisions
 
@@ -93,6 +93,7 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 - 2026-06-01T16:22:59Z: Completed 04-03-PLAN.md (multi-task/multi-seed aggregation and variance reporting). 86 tests pass; no aggregate scores.json under LAB results/batches.
 - 2026-06-01T16:28:46Z: Completed 04-04-PLAN.md (practical adapter guide and second-adapter compatibility check). 89 tests pass; no second adapter production file added.
 - 2026-06-05T05:30:00Z: Phase 5 context gathered. Decisions: per-row `metrics_provided` boolean + top-level `unmeasured_counts` (CON-03); `documents_read_list` / `documents_skipped_list` nullable on `RunResult` (CON-01); `_without_null_values` still strips `None` from `extra_fields`; list-field variance reports length statistics over measured rows. CONTEXT.md at `.planning/phases/05-honest-unmeasured-metrics-contract/05-CONTEXT.md`.
+- 2026-06-05T08:35:54Z: Phase 6 context gathered. Decisions: `MetricsExtractor` Protocol returns full `RunResult` (replaces base adapter result after poll); routing predicate `model.startswith("claude")` selects AnthropicTranscriptExtractor, otherwise no-op; cache_creation + cache_read both folded into `input_tokens`; transcript resolved by `sessionId` match against `data/v2-sessions/<group_id>/.claude-shared/projects/-workspace-agent/*.jsonl`; container file paths kept verbatim in `documents_read_list`; live `--keep-failed` run on `corporate-ma/compare-matter-plan-against-engagement-letter` is verification only. CONTEXT.md at `.planning/phases/06-metrics-extraction-and-model-routing/06-CONTEXT.md`.
 
 ## Current Position
 

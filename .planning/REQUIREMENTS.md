@@ -98,7 +98,18 @@ orchestrator over Harvey LAB.
 
 ## Traceability
 
-_(Filled by roadmap generation)_
-
 | Requirement | Phase | Plan(s) | Status |
 | ----------- | ----- | ------- | ------ |
+| CON-01 | Phase 5 | TBD | pending |
+| CON-02 | Phase 5 | TBD | pending |
+| CON-03 | Phase 5 | TBD | pending |
+| EXT-01 | Phase 6 | TBD | pending |
+| EXT-02 | Phase 6 | TBD | pending |
+| EXT-03 | Phase 6 | TBD | pending |
+| EXT-04 | Phase 6 | TBD | pending |
+| SWP-01 | Phase 7 | TBD | pending |
+| SWP-02 | Phase 7 | TBD | pending |
+| SWP-03 | Phase 7 | TBD | pending |
+| SWP-04 | Phase 7 | TBD | pending |
+| LAB-01 | Phase 7 | TBD | pending |
+| LAB-02 | Phase 7 | TBD | pending |

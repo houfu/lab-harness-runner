@@ -41,6 +41,38 @@ The required callable shape is `run(task_spec, output_dir) -> RunResult`.
 The core package treats `RunResult.end_state` as adapter/protocol evidence. It is
 not the same thing as the benchmark-facing result.
 
+## Metrics Extraction
+
+Adapter authors can plug in a model-specific metrics extractor by implementing
+the `MetricsExtractor` protocol from `lab_harness_runner.metrics_extraction`.
+The protocol is a single method, `extract(messages_out: list[dict]) -> RunResult`,
+that returns a fully-formed `RunResult` carrying the extractor's measurements
+(token counts and document coverage). The adapter base class builds its own
+`RunResult` from the poll loop and replaces the token / coverage fields with the
+extractor's output. The extractor only sees a successful transcript, so its
+return value's `end_state` is `"clean"` by definition; the adapter owns
+end-state mapping.
+
+Routing is decided at `EphemeralNanoclawAdapter` construction time using the
+`is_claude_model(model)` predicate: a non-empty string starting with the
+case-sensitive prefix `claude` selects the `AnthropicTranscriptExtractor`;
+anything else — `None`, `""`, `ollama`, `deepseek-v4-flash:cloud`, `qwen2.5`,
+etc. — selects the no-op `NoOpExtractor` that returns every token / coverage
+field as `None` and never raises. The Ollama / unknown-model path is covered
+by the no-op extractor (EXT-04's "Ollama path returns null metrics without
+raising" clause).
+
+For a Claude-prefixed model, the `AnthropicTranscriptExtractor` reads
+`input_tokens` and `output_tokens` from the `usage` block on every assistant
+message in nanoclaw's transcript jsonl. `input_tokens` is the **sum of the raw
+`input_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens`
+fields** on each line — both cache fields are folded, matching the user-facing
+Anthropic bill. The cache breakdown is not preserved as a sidecar field. A
+downstream consumer of `metrics.json` that wants the raw `input_tokens`
+(without cache) can subtract the cache fields themselves, but the
+`MetricsExtractor` does not surface them; the contract is "the user-facing
+bill" on a Claude run.
+
 ## Implementing run()
 
 `run()` receives a complete task and an already-created LAB output directory.

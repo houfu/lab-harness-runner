@@ -33,10 +33,14 @@ LAB_PATH="${LAB_PATH:-$HOME/Projects/harvey-labs}"
 NANOCLAW_DIR="${NANOCLAW_DIR:-$HOME/Projects/nanoclaw-lq}"
 MODEL="${MODEL:-deepseek-v4-flash:cloud}"
 PARALLEL="${PARALLEL:-4}"
-# Per-task poll timeout (seconds). The poll short-circuits as soon as
-# deliverables land and are size-stable, so this only caps the wait on tasks
-# that produce NO deliverable -- lowering it stops those failures from
-# stalling a worker for the full default 600s.
+# Per-task wall-clock timeout (seconds).
+# Rationale: empirical data from 174 runs in results/ shows p99 of clean runs
+# = 586.2s (n=137 clean), max = 596.1s. 600s catches p99+ while bounding
+# non-deliverable stalls to a finite interval. The deliverable-gated poll
+# short-circuits as soon as output files land and are size-stable, so the
+# 600s ceiling only applies to tasks that produce NO deliverable (hard
+# crashes, infinite loops). Tasks that finish cleanly exit well before 600s.
+# Override: TIMEOUT=300 scripts/sweep.sh
 TIMEOUT="${TIMEOUT:-600}"
 TASK_LIST="${TASK_LIST:-/tmp/harvey-lab-sweep.txt}"
 LOG_DIR="${LOG_DIR:-/tmp/harvey-lab-logs}"
@@ -84,12 +88,28 @@ run_one() {
 
 inventory() {
   [ -f "$TASK_LIST" ] || build_task_list
-  local n=0
+  local total=0
+  local clean_count=0
+  local incomplete=0
+  local paths=()
   while IFS= read -r task; do
     [ -n "$task" ] || continue
-    is_clean "${task//\//__}" || { echo "FAILED/MISSING: $task"; n=$((n+1)); }
+    total=$((total+1))
+    if is_clean "${task//\//__}"; then
+      clean_count=$((clean_count+1))
+    else
+      incomplete=$((incomplete+1))
+      paths+=("$RESULTS/${task//\//__}")
+    fi
   done < "$TASK_LIST"
-  echo "incomplete: $n"
+  # CI: skip header with tail -n +5 or grep -v '^[a-z]\|^---'
+  echo "total: $total"
+  echo "clean: $clean_count"
+  echo "incomplete: $incomplete"
+  echo "---"
+  for p in "${paths[@]}"; do
+    echo "$p"
+  done
 }
 
 export -f run_one is_clean

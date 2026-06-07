@@ -38,7 +38,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 4. Completion, Metrics, Evaluation, And Scale-Out | v1.0 | 4/4 | Complete | 2026-06-01 |
 | 5. Honest Unmeasured Metrics Contract | v1.1 | 3/3 | Complete   | 2026-06-05 |
 | 6. Metrics Extraction And Model Routing | v1.1 | 0/3 | Planned | — |
-| 7. Sweep Driver Hardening And LAB Aggregation | v1.1 | 0/4 | Planned | — |
+| 7. Sweep Driver Hardening And LAB Aggregation | v1.1 | 1/4 | In Progress|  |
 
 ---
 
@@ -392,7 +392,7 @@ Exit Criteria:
 
 Plans: 4 plans
 
-- [ ] 07-01-PLAN.md — TIMEOUT 600s rationale comment (SWP-01) + inventory dual-output rewrite (SWP-02)
+- [x] 07-01-PLAN.md — TIMEOUT 600s rationale comment (SWP-01) + inventory dual-output rewrite (SWP-02)
 - [ ] 07-02-PLAN.md — per-run .attempted/.failed markers, post-run summary line (SWP-03) + non-zero exit on hard crash (SWP-04)
 - [ ] 07-03-PLAN.md — LAB_COMPARE opt-in shell-out to evaluation.compare + config.json gap docs (LAB-01, LAB-02)
 - [ ] 07-04-PLAN.md — REVIEW.md (four post-v1.0 commits) + REPLAY.md (hardened inventory vs live results)

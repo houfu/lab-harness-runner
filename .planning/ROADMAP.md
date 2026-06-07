@@ -277,9 +277,9 @@ Exit Criteria:
 
 Plans: 3 plans
 
-- [ ] 06-01-PLAN.md — Extractor module: MetricsExtractor protocol, AnthropicUsageExtractor, DocumentReadExtractor, AnthropicTranscriptExtractor, NoOpExtractor, is_claude_model predicate (D-01..D-10)
-- [ ] 06-02-PLAN.md — Adapter wiring into EphemeralNanoclawAdapter + integration tests + metrics_provided end-to-end test (D-11..D-17)
-- [ ] 06-03-PLAN.md — Docs addendum (D-20) + operator-executed live verification run with --keep-failed (D-18, D-19)
+- [x] 06-01-PLAN.md — Extractor module: MetricsExtractor protocol, AnthropicUsageExtractor, DocumentReadExtractor, AnthropicTranscriptExtractor, NoOpExtractor, is_claude_model predicate (D-01..D-10)
+- [x] 06-02-PLAN.md — Adapter wiring into EphemeralNanoclawAdapter + integration tests + metrics_provided end-to-end test (D-11..D-17)
+- [x] 06-03-PLAN.md — Docs addendum (D-20) + operator-executed live verification run with --keep-failed (D-18, D-19)
 
 **Requirements satisfied:** EXT-01, EXT-02, EXT-03, EXT-04
 

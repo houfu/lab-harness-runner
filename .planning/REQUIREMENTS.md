@@ -28,38 +28,38 @@ orchestrator over Harvey LAB.
 
 ### Metrics extraction (EXT)
 
-- [ ] **EXT-01**: `MetricsExtractor` protocol with one method returning
+- [x] **EXT-01**: `MetricsExtractor` protocol with one method returning
   the metric fields of a `RunResult` from the agent's `messages_out`.
-- [ ] **EXT-02**: `AnthropicUsageExtractor` reads `usage` from assistant
+- [x] **EXT-02**: `AnthropicUsageExtractor` reads `usage` from assistant
   messages in `messages_out` and sums `input_tokens` / `output_tokens`
   across the run.
-- [ ] **EXT-03**: Document-read extractor enumerates `tool_use` blocks in
+- [x] **EXT-03**: Document-read extractor enumerates `tool_use` blocks in
   assistant messages and collects document filenames (or equivalent
   read-tool identifiers) into `documents_read_list`.
-- [ ] **EXT-04**: `NanoclawAdapter` instantiates the right extractor
+- [x] **EXT-04**: `NanoclawAdapter` instantiates the right extractor
   based on the configured model; the Ollama path returns null metrics
   without raising.
 
 ### Sweep driver hardening (SWP)
 
-- [ ] **SWP-01**: `sweep.sh` defaults are documented in the script;
+- [x] **SWP-01**: `sweep.sh` defaults are documented in the script;
   the `TIMEOUT` default has a rationale grounded in existing
   `results/` wall-clock data, not a guess.
-- [ ] **SWP-02**: `sweep.sh inventory` output is both machine-readable
+- [x] **SWP-02**: `sweep.sh inventory` output is both machine-readable
   (one path per line, suitable for `xargs`) and human-readable (per-task
   status counts).
-- [ ] **SWP-03**: `sweep.sh` post-run summary prints counts of
+- [x] **SWP-03**: `sweep.sh` post-run summary prints counts of
   `clean` / `agent_error` / `timeout` / `missing-deliverable` runs
   derived from the `metrics.json` files it wrote.
-- [ ] **SWP-04**: Sweep failures exit non-zero with a per-run error log
+- [x] **SWP-04**: Sweep failures exit non-zero with a per-run error log
   path printed to stderr, so a CI consumer can act without re-scanning
   the results tree.
 
 ### LAB-aggregation integration (LAB)
 
-- [ ] **LAB-01**: `sweep.sh` produces output compatible with LAB's
+- [x] **LAB-01**: `sweep.sh` produces output compatible with LAB's
   existing batch-summary tool (no new aggregator lives in the runner).
-- [ ] **LAB-02**: After a sweep, `sweep.sh` can invoke LAB's
+- [x] **LAB-02**: After a sweep, `sweep.sh` can invoke LAB's
   comparison / aggregation as a final step (opt-in via flag or
   environment).
 
@@ -103,13 +103,13 @@ orchestrator over Harvey LAB.
 | CON-01 | Phase 5 | Verified 2026-06-05 | complete |
 | CON-02 | Phase 5 | Verified 2026-06-05 | complete |
 | CON-03 | Phase 5 | Verified 2026-06-05 | complete |
-| EXT-01 | Phase 6 | TBD | pending |
-| EXT-02 | Phase 6 | TBD | pending |
-| EXT-03 | Phase 6 | TBD | pending |
-| EXT-04 | Phase 6 | TBD | pending |
-| SWP-01 | Phase 7 | TBD | pending |
-| SWP-02 | Phase 7 | TBD | pending |
-| SWP-03 | Phase 7 | TBD | pending |
-| SWP-04 | Phase 7 | TBD | pending |
-| LAB-01 | Phase 7 | TBD | pending |
-| LAB-02 | Phase 7 | TBD | pending |
+| EXT-01 | Phase 6 | Verified 2026-06-08 | complete |
+| EXT-02 | Phase 6 | Verified 2026-06-08 | complete |
+| EXT-03 | Phase 6 | Verified 2026-06-08 | complete |
+| EXT-04 | Phase 6 | Verified 2026-06-08 | complete |
+| SWP-01 | Phase 7 | Verified 2026-06-07 | complete |
+| SWP-02 | Phase 7 | Verified 2026-06-07 | complete |
+| SWP-03 | Phase 7 | Verified 2026-06-07 | complete |
+| SWP-04 | Phase 7 | Verified 2026-06-07 | complete |
+| LAB-01 | Phase 7 | Verified 2026-06-07 | complete |
+| LAB-02 | Phase 7 | Verified 2026-06-07 | complete |

@@ -1,13 +1,16 @@
 ---
 phase: 06-metrics-extraction-and-model-routing
 verified: 2026-06-08T00:00:00Z
-status: human_needed
-score: 9/10 must-haves verified
+status: passed
+score: 10/10 must-haves verified
 overrides_applied: 0
-human_verification:
-  - test: "Run one live ephemeral-group task against a real nanoclaw-lq deployment with --model claude-opus-4-8 --keep-failed"
-    expected: "metrics.json for the completed run contains non-null input_tokens and output_tokens matching the transcript's summed usage blocks, and a non-empty documents_read_list reflecting the agent's Read tool calls"
-    why_human: "Requires docker daemon, nanoclaw-lq runtime, and a running Anthropic API key; cannot be exercised in unit tests; the ROADMAP exit criteria explicitly call this out as a required live verification step"
+live_verification:
+  run: "corporate-ma/compare-matter-plan-against-engagement-letter (claude-opus-4-8, --keep-failed)"
+  group: "ag-1780871426571-ciwhd7"
+  transcript_schema: "confirmed — 15 assistant usage blocks (input/output/cache_creation/cache_read), 2 Read tool_use blocks with input.file_path"
+  deviation_found: "D-19 — shim returns nanoclaw agent-shared session id (sess-...); transcript lines carry Claude's own session UUID (27d79058-...). The two never match, so the sessionId-equality filter dropped every line and metrics.json was null."
+  resolution: "fix(06) commit 1f928fd — _resolve_transcript falls back to the sole/newest per-group *.jsonl when no line matches the shim id; sessionId match still wins when present (D-04 preserved). Re-verified against live transcript: input_tokens=436181, output_tokens=4701, documents_read_list=[/tmp/engagement.txt, /tmp/matterplan.txt]. Regression tests added; full suite 141 pass."
+  note: "Run 3275be28 metrics.json predates the fix (null); extraction logic verified end-to-end against that run's real transcript. Accepted on live re-verify per operator decision 2026-06-08."
 ---
 
 # Phase 6: Metrics Extraction and Model Routing — Verification Report
@@ -16,9 +19,9 @@ human_verification:
 
 **Verified:** 2026-06-08
 
-**Status:** human_needed
+**Status:** passed (live verification completed 2026-06-08; D-19 deviation found + fixed in commit 1f928fd)
 
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — live schema-discovery run exposed the D-19 session-id mismatch; resolver amendment applied and re-verified against the live transcript
 
 ---
 

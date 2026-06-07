@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Post-v1.0 hardening & metrics fidelity
-status: milestone_complete
-last_updated: 2026-06-07T22:17:43.131Z
+status: ready_to_plan
+last_updated: 2026-06-07T23:07:40.675Z
 last_activity: 2026-06-07 -- Phase 07 execution started
 progress:
   total_phases: 3
@@ -11,7 +11,7 @@ progress:
   total_plans: 10
   completed_plans: 10
   percent: 67
-stopped_at: Milestone complete (Phase 07 was final phase)
+stopped_at: Phase 06 complete (3/3) — ready to discuss Phase 07
 ---
 
 # State
@@ -28,7 +28,7 @@ and roadmap are defined; awaiting phase execution.
 See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** Run Harvey LAB tasks through external agent harnesses (starting with nanoclaw-lq) and score them with LAB's own evaluator, without modifying LAB.
-**Current focus:** Milestone complete
+**Current focus:** Phase 07 — sweep driver hardening and lab aggregation
 
 ## Source Documents
 
@@ -100,7 +100,7 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 Phase: 07
 Plan: Not started
-Status: Milestone complete
+Status: Ready to plan
 Last activity: 2026-06-07
 
 ## Operator Next Steps

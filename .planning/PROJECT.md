@@ -65,11 +65,13 @@ A single LAB task can be run through nanoclaw-lq end to end, producing expected
 deliverables, `metrics.json`, LAB `scores.json`, and a recorded run end-state
 without modifying LAB.
 
-## Current Milestone: v1.1 — Post-v1.0 hardening & metrics fidelity
+## Shipped Milestone: v1.1 — Post-v1.0 hardening & metrics fidelity ✅ (2026-06-08)
 
 **Goal:** Make nanoclaw-backed metrics honest (measured vs. unmeasured) and
 harden the post-v1.0 sweep driver, without changing the runner's role as a
-thin orchestrator over Harvey LAB.
+thin orchestrator over Harvey LAB. **Shipped:** 3 phases, 10 plans, 19 tasks,
+141 tests passing. All 10 requirements (CON-01..03, EXT-01..04, SWP-01..04,
+LAB-01..02) verified.
 
 **Target features:**
 
@@ -86,10 +88,14 @@ thin orchestrator over Harvey LAB.
 ## Current State
 
 **Shipped:** v1.0 MVP (2026-06-02) — Phases 1-4, 13 plans, 99 tests passing.
+v1.1 Post-v1.0 hardening & metrics fidelity (2026-06-08) — Phases 5-7, 10 plans,
+141 tests passing.
 
 The success metric is met: one LAB task (`corporate-ma/compare-matter-plan-against-engagement-letter`)
 ran end to end through the nanoclaw-lq adapter, producing
 `discrepancy-analysis-memo.docx`, `metrics.json`, and a recorded run end-state.
+The same task served as the v1.1 Phase 6 live verification, confirming real
+token + document-read extraction from the nanoclaw transcript.
 
 **Post-v1.0 merges (4 Jun 2026, outside GSD):** `5974d69` (deliverable-gated
 poll + ephemeral groups), `637228c` (per-run agent model), `3a1fd89`
@@ -100,12 +106,15 @@ path. The 4 Jun 1251-task sweep crashed ~193/1251 with ENFILE before the FD
 fix; the 600 s `TIMEOUT` default is empirically defensible (p99 of 137 clean
 runs = 586.2s, max = 596.1s).
 
-**Known gap (root of v1.1):** `RunResult` declares `int | None` for token
-and coverage fields, but `NanoclawAdapter.run()` never populates them and
-`write_metrics` silently coerces `None → 0`. Every nanoclaw-backed
-`metrics.json` reports `input_tokens: 0, output_tokens: 0` for the same
-reason, even when the agent did real work. v1.1 closes this gap end-to-end
-(CON-01..03 contract fix + EXT-01..04 real extraction).
+**Root gap of v1.1 — RESOLVED:** `RunResult` previously declared `int | None`
+for token/coverage fields, but `NanoclawAdapter.run()` never populated them and
+`write_metrics` silently coerced `None → 0`. v1.1 closed this end-to-end:
+CON-01..03 made the contract honest (null-vs-zero), EXT-01..04 added real
+transcript extraction, and the Phase 6 live run proved real values flow to
+`metrics.json` (`input_tokens=436181`, `output_tokens=4701`, 2 documents read).
+The live run also surfaced + fixed a D-19 session-id mismatch (the nanoclaw
+agent-shared session id never matches Claude's in-container session UUID, so
+the per-group transcript is now resolved by fallback — commit `1f928fd`).
 
 ### Validated
 
@@ -125,6 +134,15 @@ reason, even when the agent did real work. v1.1 closes this gap end-to-end
 - ✓ Resumable parallel `sweep.sh` with FD-exhaustion fix, `TIMEOUT` knob, and
   destroy-shim stderr surfacing (`3a1fd89`, `17d3eb7`, `3e0dd71`, `2884ae7`)
   — post-v1.0
+- ✓ Honest unmeasured-metrics contract: nullable `RunResult` fields,
+  `write_metrics` propagates `None`→JSON `null`, per-row `metrics_provided` +
+  `unmeasured_counts` + list-variance lengths in aggregation (CON-01..03)
+  — Validated in Phase 5 (v1.1)
+- ✓ `MetricsExtractor` protocol + `AnthropicUsageExtractor` (D-05 cache fold),
+  document-read extractor, and model-routed selection wired into the nanoclaw
+  adapter (Ollama path returns nulls without raising); D-19 per-group
+  transcript resolution proven against a live claude-opus-4-8 run
+  (EXT-01..04) — Validated in Phase 6 (v1.1)
 - ✓ Hardened `sweep.sh` driver: documented `TIMEOUT` rationale, CI-consumable
   `inventory` dual-output, post-run `summary:` line, non-zero exit on hard
   failure, and opt-in `LAB_COMPARE` shell-out to LAB's `evaluation.compare`
@@ -153,10 +171,12 @@ reason, even when the agent did real work. v1.1 closes this gap end-to-end
   (`task.json["instructions"]`). A move to `instructions.md` would be a contract change.
 - Phase 3 lacks a formal `03-VERIFICATION.md`; closure evidence lives in UAT,
   security, validation, summaries, tests, and the proof deliverable.
-- Cache-token breakdown (`cache_read_input_tokens`,
-  `cache_creation_input_tokens`) is left as a sidecar metric in v1.1, not
-  folded into `input_tokens`. Folding them would be ambiguous (cache reads
-  get a 90% discount) and downstream consumers may want the raw split.
+- Cache-token handling (D-05): `AnthropicUsageExtractor` folds
+  `cache_creation_input_tokens` and `cache_read_input_tokens` into the
+  reported `input_tokens` total (live run example: 8904 raw + 62352 creation
+  + 364925 read = 436181). This is a deliberate v1.1 choice; the raw split is
+  not preserved separately. Downstream consumers wanting the discount-adjusted
+  breakdown would need an extractor change (no contract change).
 - Document-read metric records container-internal `file_path` strings (e.g.
   `/tmp/engagement.txt`) — not LAB `documents_dir` filenames. The contract
   is "what the agent read", not "what is in `documents_dir`".
@@ -182,4 +202,4 @@ Deferred from v1.1, candidates for a later milestone:
 
 ---
 
-_Last updated: 2026-06-08 after Phase 7 (sweep driver hardening & LAB aggregation)_
+_Last updated: 2026-06-08 after v1.1 milestone (Post-v1.0 hardening & metrics fidelity)_

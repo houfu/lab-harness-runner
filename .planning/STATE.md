@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Post-v1.0 hardening & metrics fidelity
-status: ready_to_plan
-last_updated: 2026-06-07T23:07:40.675Z
-last_activity: 2026-06-07 -- Phase 07 execution started
+status: Awaiting next milestone
+last_updated: "2026-06-07T23:11:37.527Z"
+last_activity: 2026-06-07 — Milestone v1.1 completed and archived
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
   completed_plans: 10
-  percent: 67
-stopped_at: Phase 06 complete (3/3) — ready to discuss Phase 07
+  percent: 100
 ---
 
 # State
@@ -98,11 +97,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 ## Current Position
 
-Phase: 07
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-06-07
+Phase: Milestone v1.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-07 — Milestone v1.1 completed and archived
 
 ## Operator Next Steps
 
-- /gsd:plan-phase 5 to plan the implementation (or /gsd:research-phase 5 first if deeper code research is desired)
+- Start the next milestone with /gsd-new-milestone

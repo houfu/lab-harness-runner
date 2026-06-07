@@ -16,6 +16,7 @@ parent).
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from lab_harness_runner.adapter import RunResult
@@ -548,3 +549,112 @@ def test_combined_anthropic_path_populates_both_fields(tmp_path: Path) -> None:
     # the adapter overwrites run_id (D-13 step 2 in Plan 02).
     assert result.end_state == "clean"
     assert result.run_id == ""
+
+
+# ---------------------------------------------------------------------------
+# D-19 live schema deviation: shim session id != transcript sessionId
+# ---------------------------------------------------------------------------
+
+
+def test_d19_fallback_extracts_when_shim_id_mismatches(tmp_path: Path) -> None:
+    """The nanoclaw shim returns its agent-shared session id (``sess-...``),
+    but the Claude transcript lines carry Claude's own session UUID. The
+    two never match in a live run (confirmed by the Phase 6 live-verify
+    run on corporate-ma/compare-matter-plan-against-engagement-letter).
+    Because ``transcript_dir`` is per-ephemeral-group, the resolver must
+    fall back to the sole jsonl when no line matches the shim id.
+    """
+    claude_uuid = "27d79058-b2d9-4904-b436-0563d5135d9b"
+    transcript_dir = _write_transcript(
+        tmp_path,
+        claude_uuid,  # the jsonl's sessionId field is the Claude UUID
+        [
+            {
+                "type": "assistant",
+                "message": {
+                    "usage": {
+                        "input_tokens": 8904,
+                        "cache_creation_input_tokens": 62352,
+                        "cache_read_input_tokens": 364925,
+                        "output_tokens": 4701,
+                    },
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "name": "Read",
+                            "input": {"file_path": "/tmp/engagement.txt"},
+                        },
+                        {
+                            "type": "tool_use",
+                            "name": "Read",
+                            "input": {"file_path": "/tmp/matterplan.txt"},
+                        },
+                    ],
+                },
+            },
+        ],
+    )
+
+    # Query with the shim's agent-shared id, which is NOT the Claude UUID.
+    shim_session_id = "sess-1780871426814-f7fh70"
+    result = AnthropicTranscriptExtractor(
+        transcript_dir=transcript_dir, session_id=shim_session_id
+    ).extract([])
+
+    # D-05 cache fold: 8904 + 62352 + 364925 = 436181.
+    assert result.input_tokens == 436181
+    assert result.output_tokens == 4701
+    assert result.documents_read == 2
+    assert result.documents_read_list == [
+        "/tmp/engagement.txt",
+        "/tmp/matterplan.txt",
+    ]
+
+
+def test_d19_session_id_match_still_wins_over_fallback(tmp_path: Path) -> None:
+    """When a jsonl DOES carry the matching sessionId, it is preferred over
+    the newest-file fallback — preserving D-04 multi-run discrimination.
+    """
+    base = (
+        tmp_path
+        / "v2-sessions"
+        / "ag-test"
+        / ".claude-shared"
+        / "projects"
+        / "-workspace-agent"
+    )
+    base.mkdir(parents=True)
+
+    # Older jsonl carries the matching shim id with 11 output tokens.
+    (base / "match.jsonl").write_text(
+        json.dumps(
+            {
+                "sessionId": "s-match",
+                "type": "assistant",
+                "message": {"usage": {"input_tokens": 1, "output_tokens": 11}},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    # Newer jsonl (would win the mtime fallback) carries a different id.
+    other = base / "other.jsonl"
+    other.write_text(
+        json.dumps(
+            {
+                "sessionId": "s-other",
+                "type": "assistant",
+                "message": {"usage": {"input_tokens": 2, "output_tokens": 99}},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    os.utime(other, (10**10, 10**10))  # force "other" to be newest
+
+    result = AnthropicUsageExtractor(
+        transcript_dir=base, session_id="s-match"
+    ).extract([])
+
+    # The sessionId match wins: output_tokens from match.jsonl (11), not 99.
+    assert result.output_tokens == 11

@@ -76,30 +76,47 @@ class _TranscriptReader:
         self.session_id = session_id
 
     def _resolve_transcript(self) -> Path | None:
-        """Locate the jsonl whose top-level ``sessionId`` matches.
+        """Locate the per-group transcript jsonl.
 
-        Scans every ``*.jsonl`` entry in ``self.transcript_dir``,
-        parses lines until a matching ``sessionId`` is found, and
-        returns that jsonl's path. Returns ``None`` if the dir
-        does not exist or no jsonl carries a matching
-        ``sessionId``. Defensive against:
+        Preferred: the jsonl whose top-level ``sessionId`` matches
+        ``self.session_id``. D-19 fallback: the nanoclaw shim returns its
+        agent-shared session id (``sess-...``), but the Claude transcript
+        lines carry Claude's own session UUID generated inside the
+        container, so the two ids never match in a live run. The
+        ``transcript_dir`` is per-ephemeral-group (one session per group),
+        so when no line matches the shim id, fall back to the sole /
+        most-recently-modified ``*.jsonl`` in the group dir. Returns
+        ``None`` if the dir does not exist or holds no jsonl. Defensive
+        against:
 
         * missing dir (returns ``None``, never raises — D-04)
         * malformed jsonl files (skipped, never raised — D-06)
-        * non-matching jsonls in the same dir (the v1.0 proof
-          group may share a group dir with prior runs; D-04
-          anchored this case)
+        * a sessionId match still wins when present, preserving the
+          D-04 multi-run discrimination for groups that surface it
         """
         if not self.transcript_dir.is_dir():
             return None
 
-        for candidate in self.transcript_dir.glob("*.jsonl"):
+        candidates = sorted(self.transcript_dir.glob("*.jsonl"))
+
+        # Preferred: a jsonl whose top-level sessionId matches the
+        # shim-provided id (kept for groups that surface the matching id
+        # and for the synthetic unit fixtures).
+        for candidate in candidates:
             for line in self._iter_jsonl(candidate):
                 if not isinstance(line, dict):
                     continue
                 if line.get("sessionId") == self.session_id:
                     return candidate
-        return None
+
+        # D-19 fallback: no line matched the shim id (the live case). The
+        # group dir is per-run, so use its sole / newest transcript.
+        if not candidates:
+            return None
+        try:
+            return max(candidates, key=lambda p: p.stat().st_mtime)
+        except OSError:
+            return candidates[0]
 
     @staticmethod
     def _iter_jsonl(path: Path):

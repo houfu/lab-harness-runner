@@ -140,11 +140,15 @@ tally_summary() {
     fi
     local status
     status="$(grep -o '"benchmark_status": *"[^"]*"' "$m" | grep -o '"[^"]*"$' | tr -d '"')"
+    # status.py derive_benchmark_status emits only clean|timeout|error.
+    # The D-06 summary contract keeps the output label "agent_error=", but the
+    # case arm MUST match the real "error" value or every failed task falls
+    # through to *) and is miscounted as missing_deliverable.
     case "$status" in
-      clean)       clean=$((clean+1)) ;;
-      timeout)     timeout=$((timeout+1)) ;;
-      agent_error) agent_error=$((agent_error+1)) ;;
-      *)           missing=$((missing+1)) ;;
+      clean)   clean=$((clean+1)) ;;
+      timeout) timeout=$((timeout+1)) ;;
+      error)   agent_error=$((agent_error+1)) ;;
+      *)       missing=$((missing+1)) ;;
     esac
   done
   echo "summary: clean=$clean agent_error=$agent_error timeout=$timeout missing_deliverable=$missing"

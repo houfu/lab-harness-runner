@@ -166,27 +166,60 @@ check_failures() {
   [ "$failed" -eq 0 ]   # returns 0 if no failures, 1 if any
 }
 
-run_lab_compare() {
+# Reject absolute and traversal paths, mirroring the runner's
+# _reject_unsafe_relative_path contract that the adapter-guide mandates for
+# task/area/run/batch/group identifiers (docs/adapter-guide.md). LAB_COMPARE_ARG
+# is forwarded to a third-party evaluation.compare; do not pass it unchecked.
+validate_lab_compare_arg() {  # $1 = arg
+  case "$1" in
+    /*|*..*)
+      echo "LAB_COMPARE_ARG must be a relative area/slug path (no leading / or ..)" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Validate LAB_COMPARE configuration without running the comparison, so main()
+# can fail fast before launching a multi-hour sweep on a typo'd value.
+validate_lab_compare() {
   [ -n "${LAB_COMPARE:-}" ] || return 0
   case "$LAB_COMPARE" in
     task)
       local arg="${LAB_COMPARE_ARG:-}"
       [ -n "$arg" ] || { echo "LAB_COMPARE=task requires LAB_COMPARE_ARG=<area/slug>" >&2; return 1; }
-      ( cd "$LAB_PATH" && uv run python -m evaluation.compare --task "$arg" )
+      validate_lab_compare_arg "$arg" || return 1
       ;;
     area)
       local arg="${LAB_COMPARE_ARG:-}"
       [ -n "$arg" ] || { echo "LAB_COMPARE=area requires LAB_COMPARE_ARG=<area>" >&2; return 1; }
-      ( cd "$LAB_PATH" && uv run python -m evaluation.compare --area "$arg" )
+      validate_lab_compare_arg "$arg" || return 1
+      ;;
+    all)
+      :
+      ;;
+    *)
+      echo "LAB_COMPARE must be task|area|all (got: $LAB_COMPARE)" >&2; return 1
+      ;;
+  esac
+}
+
+run_lab_compare() {
+  [ -n "${LAB_COMPARE:-}" ] || return 0
+  # Defensive re-validation: main() validates up front, but keep run_lab_compare
+  # self-contained in case it is invoked directly.
+  validate_lab_compare || return 1
+  case "$LAB_COMPARE" in
+    task)
+      ( cd "$LAB_PATH" && uv run python -m evaluation.compare --task "${LAB_COMPARE_ARG}" )
+      ;;
+    area)
+      ( cd "$LAB_PATH" && uv run python -m evaluation.compare --area "${LAB_COMPARE_ARG}" )
       ;;
     all)
       # Note: evaluation.compare requires config.json in each run directory.
       # Runner-produced results lack config.json; use LAB_COMPARE=all only against
       # LAB-native results (harvey-labs/results/). See docs/adapter-guide.md.
       ( cd "$LAB_PATH" && uv run python -m evaluation.compare --all )
-      ;;
-    *)
-      echo "LAB_COMPARE must be task|area|all (got: $LAB_COMPARE)" >&2; return 1
       ;;
   esac
 }

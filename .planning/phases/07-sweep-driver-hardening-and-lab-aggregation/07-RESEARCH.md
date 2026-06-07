@@ -493,7 +493,7 @@ grep -q '"benchmark_status": *"clean"' "$m"
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **LAB-01 / LAB_COMPARE with no config.json**
    - What we know: `evaluation.compare` requires `config.json` in each run directory.
@@ -505,6 +505,9 @@ grep -q '"benchmark_status": *"clean"' "$m"
      runner-produced ones) and document in the LAB_COMPARE header comment. This is
      consistent with the "runner stays thin" principle. Do not add config.json in this
      phase unless the planner explicitly decides to.
+   - **RESOLVED:** Implement option (b) — document the config.json gap in `docs/adapter-guide.md`.
+     LAB_COMPARE is scoped to LAB-native results only. Plan 07-03 Task 2 writes the
+     docs section. No config.json write added to the runner (consistent with "runner stays thin").
 
 2. **ROADMAP figures vs. live data (exit criterion)**
    - What we know: ROADMAP exit criterion says "140 clean + 34 timeout = 174 total".
@@ -514,6 +517,10 @@ grep -q '"benchmark_status": *"clean"' "$m"
    - Recommendation: The replay analysis plan should run `sweep.sh inventory` against
      live data and report actual figures. Document the live figure as the correct one.
      The exit criterion should be updated to match live data.
+   - **RESOLVED:** Plans use live-measured figures (170 total, 136 clean, 34 timeout).
+     Plan 07-04 Task 2 runs `sweep.sh inventory` against `~/Projects/harvey-labs/results/`
+     and records actual output in REPLAY.md, explicitly reconciling the stale ROADMAP 174 figure.
+     The TIMEOUT comment in Plan 07-01 uses the ROADMAP-locked p99=586.2s figure per D-07.
 
 3. **Marker file cleanup policy**
    - What we know: `.attempted` and `.failed` files accumulate in `$LOG_DIR`.
@@ -525,6 +532,9 @@ grep -q '"benchmark_status": *"clean"' "$m"
    - Recommendation: Delete both at the start of `main()` before the `xargs` invocation.
      This makes the summary reflect only the current pass. The skip-on-clean logic
      (D-04) explicitly excludes skipped tasks anyway.
+   - **RESOLVED:** `main()` deletes `*.attempted` and `*.failed` at the start of each
+     sweep pass (before the `xargs` invocation). Plan 07-02 Task 2 action implements this.
+     Summary counts reflect only the current pass (D-04 alignment).
 
 ---
 

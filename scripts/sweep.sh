@@ -225,6 +225,10 @@ run_lab_compare() {
 }
 
 main() {
+  # Fail fast: validate LAB_COMPARE config before launching a multi-hour sweep,
+  # matching the documented contract that an invalid value exits non-zero
+  # without running any task (docs/adapter-guide.md).
+  validate_lab_compare || exit 1
   mkdir -p "$LOG_DIR"
   # Clean up stale markers so summary reflects only this sweep pass (D-04)
   rm -f "$LOG_DIR"/*.attempted "$LOG_DIR"/*.failed 2>/dev/null || true

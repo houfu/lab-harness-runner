@@ -125,6 +125,10 @@ reason, even when the agent did real work. v1.1 closes this gap end-to-end
 - ✓ Resumable parallel `sweep.sh` with FD-exhaustion fix, `TIMEOUT` knob, and
   destroy-shim stderr surfacing (`3a1fd89`, `17d3eb7`, `3e0dd71`, `2884ae7`)
   — post-v1.0
+- ✓ Hardened `sweep.sh` driver: documented `TIMEOUT` rationale, CI-consumable
+  `inventory` dual-output, post-run `summary:` line, non-zero exit on hard
+  failure, and opt-in `LAB_COMPARE` shell-out to LAB's `evaluation.compare`
+  (no new runner aggregator) — Validated in Phase 7 (v1.1)
 
 ### Key Decisions
 
@@ -178,4 +182,4 @@ Deferred from v1.1, candidates for a later milestone:
 
 ---
 
-_Last updated: 2026-06-02 after v1.0 milestone_
+_Last updated: 2026-06-08 after Phase 7 (sweep driver hardening & LAB aggregation)_

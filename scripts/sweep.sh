@@ -81,6 +81,13 @@ run_one() {
       --model "$MODEL" \
       --timeout "$TIMEOUT" \
   ) >> "$LOG_DIR/$run_id.log" 2>&1
+  # D-01 failure check: no metrics.json AND no output files = hard crash
+  local m="$RESULTS/$run_id/metrics.json"
+  local out_dir="$RESULTS/$run_id/output"
+  if ! [ -f "$m" ] && ! { [ -d "$out_dir" ] && [ -n "$(ls -A "$out_dir" 2>/dev/null)" ]; }; then
+    touch "$LOG_DIR/$run_id.failed"
+  fi
+  touch "$LOG_DIR/$run_id.attempted"   # D-05: always mark attempted
   # Never propagate non-zero: a single failure returning 255 makes xargs abort
   # the entire sweep. Failures are recovered by re-running (skip-on-clean).
   return 0

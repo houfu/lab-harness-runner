@@ -394,6 +394,7 @@ class EphemeralNanoclawAdapter:
         keep_failed: bool = False,
         name_prefix: str = "lab-eph",
         model: str | None = None,
+        copy_mcp_from: str | None = None,
     ) -> None:
         self.nanoclaw_dir = nanoclaw_dir.expanduser().resolve()
         self.timeout_seconds = timeout_seconds
@@ -403,6 +404,9 @@ class EphemeralNanoclawAdapter:
         # None -> the group keeps nanoclaw's default model (model-neutral). A
         # non-claude model is routed to the host Ollama by the create shim.
         self.model = model
+        # When set, MCP server config is copied from this group ID into each
+        # ephemeral group at creation time so agents can reach MCP servers.
+        self.copy_mcp_from = copy_mcp_from
         # D-11: route at construction time; cache the chosen extractor.
         # Claude-prefixed models get a deferred wrapper that run() binds
         # to the resolved per-group transcript_dir and sessionId; everything
@@ -428,11 +432,15 @@ class EphemeralNanoclawAdapter:
 
         Passes --model only when a model is configured, so the committed default
         is model-neutral; the operator selects a model (e.g. an Ollama-routed
-        one) per run or via env.
+        one) per run or via env.  Passes --copy-mcp-from when configured so
+        each ephemeral group inherits the MCP server definitions from a source
+        group at creation time.
         """
         cmd = ["pnpm", "exec", "tsx", "scripts/create-lab-group.ts", "--name", name]
         if self.model:
             cmd += ["--model", self.model]
+        if self.copy_mcp_from:
+            cmd += ["--copy-mcp-from", self.copy_mcp_from]
         result = subprocess.run(
             cmd,
             cwd=self.nanoclaw_dir,

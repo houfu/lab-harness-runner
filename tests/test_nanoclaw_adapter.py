@@ -364,6 +364,44 @@ def test_ephemeral_model_neutral_by_default(tmp_path: Path) -> None:
     assert "--model" not in cmd
 
 
+def test_create_group_passes_copy_mcp_from(tmp_path: Path) -> None:
+    """copy_mcp_from -> --copy-mcp-from forwarded to the create shim."""
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    source_group = "ag-1780104061580-u104or"
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path, copy_mcp_from=source_group)
+
+    result_line = json.dumps({"groupId": "ag-new-1", "folder": "f", "model": None})
+    with patch("lab_harness_runner.nanoclaw_adapter.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=result_line + "\n", stderr=""
+        )
+        group_id = adapter._create_group("lab-eph-mcp")
+
+    assert group_id == "ag-new-1"
+    cmd = mock_run.call_args[0][0]
+    assert "--copy-mcp-from" in cmd
+    assert source_group in cmd
+
+
+def test_create_group_no_copy_mcp_from_by_default(tmp_path: Path) -> None:
+    """copy_mcp_from=None -> --copy-mcp-from NOT passed to the create shim."""
+    from lab_harness_runner.nanoclaw_adapter import EphemeralNanoclawAdapter
+
+    adapter = EphemeralNanoclawAdapter(nanoclaw_dir=tmp_path)
+    assert adapter.copy_mcp_from is None
+
+    result_line = json.dumps({"groupId": "ag-y", "folder": "f", "model": None})
+    with patch("lab_harness_runner.nanoclaw_adapter.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=result_line + "\n", stderr=""
+        )
+        adapter._create_group("lab-eph-y")
+
+    cmd = mock_run.call_args[0][0]
+    assert "--copy-mcp-from" not in cmd
+
+
 def test_ephemeral_creates_and_destroys_on_success(tmp_path: Path) -> None:
     """Successful run -> group created once, inner adapter runs, group destroyed.
 

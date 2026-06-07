@@ -108,6 +108,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--copy-mcp-from",
+        default=os.environ.get("LAB_COPY_MCP_FROM"),
+        help=(
+            "copy MCP server config from this agent group ID into each ephemeral "
+            "group at creation time so agents have access to MCP servers. "
+            "Default: LAB_COPY_MCP_FROM env var if set. Ignored with --group-id"
+        ),
+    )
+    parser.add_argument(
         "--timeout",
         type=float,
         default=600.0,
@@ -310,6 +319,7 @@ def _adapter_from_args(
         timeout_seconds=args.timeout,
         keep_failed=args.keep_failed,
         model=args.model,
+        copy_mcp_from=getattr(args, "copy_mcp_from", None),
     )
 
 

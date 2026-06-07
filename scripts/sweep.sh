@@ -81,6 +81,13 @@ run_one() {
       --model "$MODEL" \
       --timeout "$TIMEOUT" \
   ) >> "$LOG_DIR/$run_id.log" 2>&1
+  # D-01 failure check: no metrics.json AND no output files = hard crash
+  local m="$RESULTS/$run_id/metrics.json"
+  local out_dir="$RESULTS/$run_id/output"
+  if ! [ -f "$m" ] && ! { [ -d "$out_dir" ] && [ -n "$(ls -A "$out_dir" 2>/dev/null)" ]; }; then
+    touch "$LOG_DIR/$run_id.failed"
+  fi
+  touch "$LOG_DIR/$run_id.attempted"   # D-05: always mark attempted
   # Never propagate non-zero: a single failure returning 255 makes xargs abort
   # the entire sweep. Failures are recovered by re-running (skip-on-clean).
   return 0
@@ -115,13 +122,52 @@ inventory() {
 export -f run_one is_clean
 export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR PY TIMEOUT
 
+tally_summary() {
+  local clean=0 agent_error=0 timeout=0 missing=0
+  for marker in "$LOG_DIR"/*.attempted; do
+    [ -f "$marker" ] || continue          # guard: no-match glob expands to literal
+    local run_id
+    run_id="$(basename "$marker" .attempted)"
+    local m="$RESULTS/$run_id/metrics.json"
+    if [ ! -f "$m" ]; then
+      missing=$((missing+1))
+      continue
+    fi
+    local status
+    status="$(grep -o '"benchmark_status": *"[^"]*"' "$m" | grep -o '"[^"]*"$' | tr -d '"')"
+    case "$status" in
+      clean)       clean=$((clean+1)) ;;
+      timeout)     timeout=$((timeout+1)) ;;
+      agent_error) agent_error=$((agent_error+1)) ;;
+      *)           missing=$((missing+1)) ;;
+    esac
+  done
+  echo "summary: clean=$clean agent_error=$agent_error timeout=$timeout missing_deliverable=$missing"
+}
+
+check_failures() {
+  local failed=0
+  for marker in "$LOG_DIR"/*.failed; do
+    [ -f "$marker" ] || continue
+    failed=$((failed+1))
+    local run_id
+    run_id="$(basename "$marker" .failed)"
+    echo "FAILED: $LOG_DIR/$run_id.log" >&2
+  done
+  [ "$failed" -eq 0 ]   # returns 0 if no failures, 1 if any
+}
+
 main() {
   mkdir -p "$LOG_DIR"
+  # Clean up stale markers so summary reflects only this sweep pass (D-04)
+  rm -f "$LOG_DIR"/*.attempted "$LOG_DIR"/*.failed 2>/dev/null || true
   build_task_list
   echo "sweep: $PARALLEL workers, model=$MODEL, logs -> $LOG_DIR"
   xargs -P "$PARALLEL" -I{} bash -c 'run_one "$@"' _ {} < "$TASK_LIST"
   echo "--- sweep pass complete; remaining incomplete tasks: ---"
   inventory
+  tally_summary
+  check_failures || exit 1
 }
 
 case "${1:-run}" in

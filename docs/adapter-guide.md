@@ -274,3 +274,54 @@ The future adapter should reuse `TaskSpec`, `RunResult`,
 - Treat seed as metadata unless deterministic seeding is implemented and tested.
 - Document any adapter-specific operational requirements without exposing
   secrets, credentials, or private API keys.
+
+## Sweep LAB comparison (LAB_COMPARE)
+
+Setting `LAB_COMPARE=task|area|all` triggers an opt-in final step in
+`scripts/sweep.sh` that shells out to LAB's `evaluation.compare` module. The
+runner adds no aggregation logic of its own — LAB remains the source of
+scoring and reporting (the "runner stays thin" principle). The shell-out runs
+as `( cd "$LAB_PATH" && uv run python -m evaluation.compare ... )` so that
+`uv` discovers `$LAB_PATH/pyproject.toml`.
+
+### Scopes
+
+| Value | Additional var required | Command |
+|-------|------------------------|---------|
+| `task` | `LAB_COMPARE_ARG=<area/slug>` | `evaluation.compare --task <area/slug>` |
+| `area` | `LAB_COMPARE_ARG=<area>` | `evaluation.compare --area <area>` |
+| `all`  | none | `evaluation.compare --all` |
+
+`LAB_COMPARE=task` and `LAB_COMPARE=area` require `LAB_COMPARE_ARG` to be set.
+If `LAB_COMPARE_ARG` is unset for these scopes, the script prints an error to
+stderr and returns non-zero without running the sweep. `LAB_COMPARE=all` takes
+no additional argument.
+
+An invalid `LAB_COMPARE` value (not `task`, `area`, or `all`) causes the sweep
+to print an error to stderr and exit non-zero without running any task.
+
+### Example invocations
+
+```bash
+LAB_COMPARE=all scripts/sweep.sh
+LAB_COMPARE=area LAB_COMPARE_ARG=corporate-ma scripts/sweep.sh
+LAB_COMPARE=task LAB_COMPARE_ARG=corporate-ma/compare-matter-plan-against-engagement-letter scripts/sweep.sh
+```
+
+### config.json compatibility gap
+
+`evaluation.compare.collect_runs()` skips any run directory that does not
+contain a `config.json` file. Runner-produced result directories at
+`$LAB_PATH/results/<run-id>/` contain `metrics.json` and `scores.json` but
+**NOT** `config.json`. As a result:
+
+- Running `LAB_COMPARE=all` (or `area`/`task`) against only runner-produced
+  result directories will produce **empty comparison output** — not an error.
+- This is by design in LAB's `collect_runs()` and is not a runner bug.
+- To get non-empty comparison output, point `LAB_COMPARE` at a result set
+  produced natively by LAB (i.e. results that include `config.json`), or
+  ensure a `config.json` is written to each run directory before running
+  `evaluation.compare`.
+
+The recommended workflow is to use `LAB_COMPARE` against LAB-native results
+in `$LAB_PATH/results/` where `config.json` is present.

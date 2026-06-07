@@ -23,7 +23,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 <summary>🚧 v1.1 Post-v1.0 hardening & metrics fidelity (Phases 5-7) — PLANNING</summary>
 
 - [x] Phase 5: Honest Unmeasured Metrics Contract (completed 2026-06-05)
-- [ ] Phase 6: Metrics Extraction And Model Routing (Planned: 3 plans)
+- [x] Phase 6: Metrics Extraction And Model Routing (completed 2026-06-08)
 - [x] Phase 7: Sweep Driver Hardening And LAB Aggregation (Planned: 4 plans) (completed 2026-06-07)
 
 </details>
@@ -37,7 +37,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 3. Implement Nanoclaw-LQ Adapter | v1.0 | 3/3 | Complete | 2026-06-01 |
 | 4. Completion, Metrics, Evaluation, And Scale-Out | v1.0 | 4/4 | Complete | 2026-06-01 |
 | 5. Honest Unmeasured Metrics Contract | v1.1 | 3/3 | Complete   | 2026-06-05 |
-| 6. Metrics Extraction And Model Routing | v1.1 | 0/3 | Planned | — |
+| 6. Metrics Extraction And Model Routing | v1.1 | 3/3 | Complete | 2026-06-08 |
 | 7. Sweep Driver Hardening And LAB Aggregation | v1.1 | 4/4 | Complete   | 2026-06-07 |
 
 ---

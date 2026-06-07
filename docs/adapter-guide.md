@@ -298,7 +298,24 @@ stderr and returns non-zero without running the sweep. `LAB_COMPARE=all` takes
 no additional argument.
 
 An invalid `LAB_COMPARE` value (not `task`, `area`, or `all`) causes the sweep
-to print an error to stderr and exit non-zero without running any task.
+to print an error to stderr and exit non-zero without running any task. This
+validation runs at the very start of the sweep, before any task is launched, so
+a typo is caught immediately rather than after a multi-hour run.
+
+`LAB_COMPARE_ARG` is validated as a relative path: values with a leading `/`
+(absolute) or containing `..` (traversal) are rejected with a non-zero exit,
+mirroring the runner's path-safety contract for task, area, run, batch, and
+group identifiers. Pass only relative `area` or `area/slug` values.
+
+### Comparison is skipped when any task failed
+
+`run_lab_compare` is the final step of a sweep and runs only after the
+failure gate. If any task produced a `.failed` marker (no `metrics.json` and no
+output files — a hard crash), the sweep exits non-zero **before** the
+comparison runs, so the opt-in `LAB_COMPARE` comparison is **skipped**. This is
+intentional: a sweep with hard failures is incomplete, and comparing partial
+results would be misleading. Re-run the sweep (completed tasks skip instantly)
+until it is clean, then the comparison runs at the end.
 
 ### Example invocations
 

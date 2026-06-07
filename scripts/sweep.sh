@@ -114,9 +114,14 @@ inventory() {
   echo "clean: $clean_count"
   echo "incomplete: $incomplete"
   echo "---"
-  for p in "${paths[@]}"; do
-    echo "$p"
-  done
+  # bash 3.2: expanding an empty array as "${paths[@]}" under `set -u` trips
+  # "unbound variable" and aborts. ${#paths[@]} on an empty array is 0 and is
+  # safe, so guard the loop. Empty post-header output means zero incomplete.
+  if [ "${#paths[@]}" -gt 0 ]; then
+    for p in "${paths[@]}"; do
+      echo "$p"
+    done
+  fi
 }
 
 export -f run_one is_clean

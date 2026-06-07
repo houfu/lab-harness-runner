@@ -120,7 +120,7 @@ inventory() {
 }
 
 export -f run_one is_clean
-export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR PY TIMEOUT
+export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR PY TIMEOUT LAB_PATH
 
 tally_summary() {
   local clean=0 agent_error=0 timeout=0 missing=0
@@ -157,6 +157,31 @@ check_failures() {
   [ "$failed" -eq 0 ]   # returns 0 if no failures, 1 if any
 }
 
+run_lab_compare() {
+  [ -n "${LAB_COMPARE:-}" ] || return 0
+  case "$LAB_COMPARE" in
+    task)
+      local arg="${LAB_COMPARE_ARG:-}"
+      [ -n "$arg" ] || { echo "LAB_COMPARE=task requires LAB_COMPARE_ARG=<area/slug>" >&2; return 1; }
+      ( cd "$LAB_PATH" && uv run python -m evaluation.compare --task "$arg" )
+      ;;
+    area)
+      local arg="${LAB_COMPARE_ARG:-}"
+      [ -n "$arg" ] || { echo "LAB_COMPARE=area requires LAB_COMPARE_ARG=<area>" >&2; return 1; }
+      ( cd "$LAB_PATH" && uv run python -m evaluation.compare --area "$arg" )
+      ;;
+    all)
+      # Note: evaluation.compare requires config.json in each run directory.
+      # Runner-produced results lack config.json; use LAB_COMPARE=all only against
+      # LAB-native results (harvey-labs/results/). See docs/adapter-guide.md.
+      ( cd "$LAB_PATH" && uv run python -m evaluation.compare --all )
+      ;;
+    *)
+      echo "LAB_COMPARE must be task|area|all (got: $LAB_COMPARE)" >&2; return 1
+      ;;
+  esac
+}
+
 main() {
   mkdir -p "$LOG_DIR"
   # Clean up stale markers so summary reflects only this sweep pass (D-04)
@@ -168,6 +193,7 @@ main() {
   inventory
   tally_summary
   check_failures || exit 1
+  run_lab_compare
 }
 
 case "${1:-run}" in

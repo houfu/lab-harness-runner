@@ -47,12 +47,24 @@ LOG_DIR="${LOG_DIR:-/tmp/harvey-lab-logs}"
 
 RESULTS="$LAB_PATH/results"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolve the Python interpreter invocation as an argv array so both forms
+# quote correctly regardless of spaces in the checkout path. The `.venv` form
+# is a single path token; the fallback `uv run python` is three tokens. A
+# scalar with word-splitting would break the `.venv` branch on a path with
+# spaces, so use an array. NOTE: arrays do not survive `export` to the xargs
+# subshell, so run_one rebuilds this from $HERE (which IS exported).
+#
 # Call the venv interpreter directly instead of `uv run`: the latter
 # re-validates the env and opens uv cache files on every single invocation,
 # which under parallel load exhausted the system-wide FD table (ENFILE) and
 # crashed an earlier sweep ~193 tasks in. Fall back to `uv run` if absent.
-PY="$HERE/.venv/bin/python"
-[ -x "$PY" ] || PY="uv run python"
+resolve_py() {  # echoes nothing; sets the PY array in the caller's scope
+  if [ -x "$HERE/.venv/bin/python" ]; then
+    PY=("$HERE/.venv/bin/python")
+  else
+    PY=(uv run python)
+  fi
+}
 
 build_task_list() {
   find "$LAB_PATH/tasks" -name task.json \
@@ -73,7 +85,9 @@ run_one() {
     return 0
   fi
   echo "run   $task"
-  ( cd "$HERE" && $PY scripts/run_benchmark.py \
+  local PY
+  resolve_py   # rebuild PY array inside this subshell (arrays do not export)
+  ( cd "$HERE" && "${PY[@]}" scripts/run_benchmark.py \
       --task "$task" \
       --run-id "$run_id" \
       --adapter nanoclaw \
@@ -124,8 +138,10 @@ inventory() {
   fi
 }
 
-export -f run_one is_clean
-export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR PY TIMEOUT LAB_PATH
+# PY is an array rebuilt by resolve_py inside run_one (arrays do not export to
+# the xargs subshell), so export the function instead of a PY scalar.
+export -f run_one is_clean resolve_py
+export RESULTS NANOCLAW_DIR MODEL HERE LOG_DIR TIMEOUT LAB_PATH
 
 tally_summary() {
   local clean=0 agent_error=0 timeout=0 missing=0

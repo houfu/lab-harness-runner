@@ -24,7 +24,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 - [x] Phase 5: Honest Unmeasured Metrics Contract (completed 2026-06-05)
 - [ ] Phase 6: Metrics Extraction And Model Routing (Planned: 3 plans)
-- [ ] Phase 7: Sweep Driver Hardening And LAB Aggregation (Planned: 4 plans)
+- [x] Phase 7: Sweep Driver Hardening And LAB Aggregation (Planned: 4 plans) (completed 2026-06-07)
 
 </details>
 
@@ -38,7 +38,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 | 4. Completion, Metrics, Evaluation, And Scale-Out | v1.0 | 4/4 | Complete | 2026-06-01 |
 | 5. Honest Unmeasured Metrics Contract | v1.1 | 3/3 | Complete   | 2026-06-05 |
 | 6. Metrics Extraction And Model Routing | v1.1 | 0/3 | Planned | — |
-| 7. Sweep Driver Hardening And LAB Aggregation | v1.1 | 3/4 | In Progress|  |
+| 7. Sweep Driver Hardening And LAB Aggregation | v1.1 | 4/4 | Complete   | 2026-06-07 |
 
 ---
 
@@ -394,7 +394,7 @@ Plans: 4 plans
 
 - [x] 07-01-PLAN.md — TIMEOUT 600s rationale comment (SWP-01) + inventory dual-output rewrite (SWP-02)
 - [x] 07-02-PLAN.md — per-run .attempted/.failed markers, post-run summary line (SWP-03) + non-zero exit on hard crash (SWP-04)
-- [ ] 07-03-PLAN.md — LAB_COMPARE opt-in shell-out to evaluation.compare + config.json gap docs (LAB-01, LAB-02)
+- [x] 07-03-PLAN.md — LAB_COMPARE opt-in shell-out to evaluation.compare + config.json gap docs (LAB-01, LAB-02)
 - [x] 07-04-PLAN.md — REVIEW.md (four post-v1.0 commits) + REPLAY.md (hardened inventory vs live results)
 
 **Requirements satisfied:** SWP-01, SWP-02, SWP-03, SWP-04, LAB-01, LAB-02
